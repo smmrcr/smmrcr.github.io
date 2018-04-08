@@ -79,7 +79,8 @@ array {
 font-size: 30px;}
 
 .embed { 
-    height: 100%;
+    margin-top: 14px;
+    height: 100vh;
 }
 
 table {
