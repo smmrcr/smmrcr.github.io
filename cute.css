@@ -43,7 +43,7 @@ gluck {
 body {
     background-color: ghostwhite;
     font-family: "Garamond", Times, serif;
-
+    min-height: 100vh;
 }
 
 h1 {
@@ -77,6 +77,9 @@ array {
   color: #9F3A2B;
   font-weight: bolder;
 font-size: 30px;}
+
+.embed {   
+}
 
 table {
   padding-left:16px;
