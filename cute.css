@@ -78,7 +78,8 @@ array {
   font-weight: bolder;
 font-size: 30px;}
 
-.embed {   
+.embed { 
+    height: 100%;
 }
 
 table {
