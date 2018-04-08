@@ -1,0 +1,112 @@
+/*
+website designed by sam mercer.
+stylesheet for this website is ordered in sections:
+1-Navigation
+2-Body
+3-Extras and un-used
+ */
+
+/* Navigation */
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+li {
+    float: left;
+}
+
+li a {
+    display: block;
+    color: black;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+li a:hover {
+    background-color: #DFF6E6
+}
+
+gluck {
+    display: block;
+    color: black;
+    text-align: left;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+/* Body */
+body {
+    background-color: ghostwhite;
+    font-family: "Garamond", Times, serif;
+
+}
+
+h1 {
+  color: black;
+  margin-left: 16px;
+  text-shadow: 2px 2px #ffffff;
+}
+
+h2 {
+}
+
+h3 {
+  text-shadow: 2px 2px #ffffff;
+  padding-left:16px;
+  margin-bottom: -10px;
+}
+
+h4 {
+  text-align:right;
+  margin-right: 16px;
+  color: gainsboro;
+}
+
+p {
+color: black;
+padding: 2.5px 16px;
+padding-right: 20%
+}
+
+array {
+  color: #9F3A2B;
+  font-weight: bolder;
+font-size: 30px;}
+
+table {
+  padding-left:16px;
+  padding-top: 20px;
+}
+
+th, td {
+  padding: 2px;
+}
+
+tr {
+  padding-left: 25px
+}
+
+
+/* unvisited link */
+a:link {
+    color: darkgreen;
+}
+
+/* visited link */
+a:visited {
+    color: black;
+}
+
+/* mouse over link */
+a:hover {
+    color: hotpink;
+}
+
+/* selected link */
+a:active {
+    color: blue;
