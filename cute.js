@@ -19,9 +19,9 @@
         //End Game, 2017 [for Synthetic Ecology at ONCA, Brighton]
         '263421324',
         //Left Wanting More, 2018 [An event takes place on multiple levels: it happens on hearing about something, on being part of something and then there’s also a personal interaction, of intimacy...]
-        '276958049'
+        '276958049',
         //Purposefully Systematic, 2020 [The recent emissions scandal were not an accident, and not a solitary incident. Rather it was one that mixed systematic deception with a history of carefully worded management. Using a diverse mix of inputs - from an interview with a self-driving car specialist and a song based on the core values of automobile manufacturers, to an historian who was commissioned to report Volkswagen's involvement in World War II and Achille Mbembe's writing on necropolitics - this film begins to mould a vision of the subtle ways that violence seeps in to every day environments.]
-        '387061379'
+        '387061379',
            ];
     var index = Math.floor(Math.random() * videos.length);
     var html ='<iframe src="https://player.vimeo.com/video/' + videos[index] + '?autoplay=1" width="100%" height="70%" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>';
