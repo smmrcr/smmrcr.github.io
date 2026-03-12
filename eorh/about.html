@@ -1,0 +1,804 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+  <title>The End of {Revision} History</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+      :root {
+        --accent: #ff2ba6;
+        --accent-soft: rgba(255,43,166,0.12);
+        --bg: #fff9ff;
+        --text: #222;
+        --shell-bg: #ffffff;
+        --article-bg: #fff9ff;
+        --article-border: rgba(255,43,166,0.12);
+        --purple: #8b5cf6;
+      }
+      :root[data-theme="dark"] {
+        --bg: #050310;
+        --text: #f5ecff;
+        --shell-bg: #0f0b1f;
+        --article-bg: #131129;
+        --article-border: rgba(255,43,166,0.4);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Georgia", "Times New Roman", serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        line-height: 1.6;
+        font-size: 1.05rem;
+        letter-spacing: 0.02em;
+      }
+
+      .title {
+        font-size: clamp(1.8rem, 5vw, 3rem);
+        font-weight: 400;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        background: linear-gradient(135deg, var(--accent), var(--purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .app { max-width: 1100px; width: 100%; }
+
+      .shell {
+        border-radius: 16px;
+        border: 3px solid var(--accent);
+        background: var(--shell-bg);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 70vh;
+      }
+
+      .shell-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.6rem 0.8rem;
+        border-bottom: 3px solid var(--accent);
+        background: linear-gradient(90deg,#ffe6ff,#fff);
+        gap: 0.5rem;
+      }
+
+      .window-buttons {
+        display: flex;
+        gap: 0.35rem;
+        align-items: center;
+      }
+
+      .dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 2px solid var(--accent);
+        position: relative;
+        text-decoration: none;
+        color: var(--accent);
+        font-size: 0.55rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        background: rgba(255,255,255,0.8);
+        cursor: pointer;
+      }
+
+      .dot::before, .dot::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        border-radius: inherit;
+        border: 1px solid rgba(255,43,166,0.35);
+      }
+
+      .dot-min { font-size: 0.7rem; }
+      .dot-max { font-size: 0.8rem; }
+      .dot-close { font-size: 0.8rem; }
+
+      .address-bar {
+        flex: 1;
+        padding: 0.3rem 0.6rem;
+        border-radius: 999px;
+        border: 2px solid var(--accent);
+        font-size: 0.8rem;
+        color: #555;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fff;
+        min-width: 0;
+        font-family: inherit;
+      }
+
+      .address-bar span { white-space: nowrap; font-size: 0.75rem; }
+      .address-input {
+        border: none;
+        outline: none;
+        font: inherit;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .close-box {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        border: 2px solid var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: none;
+        background: rgba(255,255,255,0.9);
+        cursor: pointer;
+      }
+
+      .shell-body {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 0;
+      }
+
+      #controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .control-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      #status {
+        font-size: 0.85rem;
+        color: #666;
+        font-style: italic;
+        text-align: center;
+        width: 100%;
+        margin-top: 0.25rem;
+      }
+
+      button {
+        background: var(--accent);
+        color: #fff;
+        border-radius: 999px;
+        border: none;
+        padding: 0.45rem 1rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        box-shadow: 0 4px 0 rgba(191,0,109,0.5);
+        transition: all 0.15s ease;
+        font-family: inherit;
+        font-weight: 500;
+      }
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 0 rgba(191,0,109,0.5);
+      }
+      button:active:not(:disabled) {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 rgba(191,0,109,0.5);
+      }
+      button:disabled {
+        opacity: 0.4;
+        box-shadow: none;
+        cursor: default;
+        transform: none;
+      }
+
+      #slider-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        justify-content: center;
+      }
+
+      #slider {
+        flex: 1;
+        max-width: 320px;
+      }
+
+      #slider-label {
+        font-size: 0.85rem;
+        color: #555;
+        white-space: nowrap;
+      }
+
+      #meta {
+        font-size: 0.85rem;
+        color: #777;
+        text-align: center;
+      }
+
+      #article {
+        margin-top: 0.5rem;
+        flex: 1;
+        min-height: 260px;
+        border-radius: 12px;
+        border: 2px solid var(--article-border);
+        background: var(--article-bg);
+        padding: 1.25rem;
+        line-height: 1.7;
+        font-size: 1rem;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+      }
+
+      .word {
+        display: inline-block;
+        transition: color 0.3s ease, text-shadow 0.3s ease;
+      }
+
+      .word-new {
+        text-shadow: 0 0 10px rgba(255,255,255,0.9);
+      }
+
+      .credit {
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: #777;
+        text-align: center;
+        font-family: "Georgia", "Times New Roman", serif;
+      }
+
+      @media (max-width: 720px) {
+        body { padding: 0.75rem; }
+        .shell { border-width: 2px; }
+        .shell-header {
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 0.75rem;
+        }
+        .address-bar {
+          order: 3;
+          width: 100%;
+          justify-content: center;
+        }
+        .address-bar span { display: none; }
+        #controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .control-group { justify-content: stretch; }
+        button { flex: 1; justify-content: center; }
+        #slider-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        #slider-label { text-align: center; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="title">The End of [[Revision]] History</h1>
+
+    <div class="app">
+      <div class="shell">
+        <div class="shell-header">
+          <div class="window-buttons">
+            <a href="about.html" class="dot dot-min" title="About">–</a>
+            <a href="credits.html" class="dot dot-max" title="Gallery">□</a>
+            <a href="../index.html" target="_blank" rel="noopener" class="dot dot-close" title="Back to site">×</a>
+          </div>
+
+          <div class="address-bar">
+            <span>About</span>
+          </div>
+
+          <a href="index.html" class="close-box" id="hamburger" title="The end of [[revision]] history">≡</a>
+        </div>
+
+        <div class="shell-body">
+
+          <div id="article">
+           <strong>The end of [[revision]] history</strong> comes from a deep fascination with how knowledge has been constructed and understood in the 21st century. Since its launch in 2001, Wikipedia has been invaluable not only because of its open access to writing histories, but also for the way it preserves the changes and conversations around its articles. Within Wikipedia, knowledge is always unfixed and contested.<br>
+           Reports of Wikipedia’s demise have circulated for many years, due to an imbalance of labour, a lack of authorial expertise and inherent biases, as well as the rise of AI editors. Further issues emerge from inconsistencies across different language versions. Recently, a libertarian far right tech entrepreneur extracted Wikipedia’s user generated content and used his AI platform to create an alternative, attempting to counter what he perceived as a “liberal woke mindset.” The platform emphasises simplicity, but what becomes lost is the knowledge encoded in revisions, changes, subjective interpretations, and publicly contestable reference points—elements that fundamentally shape how we see the world.
+           <br>This website acts as a cross between an artwork and a tool. Load an article (it can load any article but those will a lot of edits take a long time to open and saving those json files can still cause issues).
+
+            </div>
+        </div>
+      </div>
+
+      <p class="credit">created from Wikipedia edits</p>
+    </div>
+
+    <script>
+      const FPS = 12;
+      let FRAME_DURATION = 1000 / FPS;
+      let LOOP_MODE = false;
+
+      let revisions = [];   // { id, words: [{value, firstSeenAt, break?}] }
+      let currentIndex = 0;
+      let playing = false;
+      let lastFrameTime = 0;
+
+      const titleInput = document.getElementById('title-input');
+      const loadBtn = document.getElementById('load');
+      const loadJsonBtn = document.getElementById('load-json');
+      const downloadBtn = document.getElementById('download');
+      const playBtn = document.getElementById('play');
+      const pauseBtn = document.getElementById('pause');
+      const loopBtn = document.getElementById('loop');
+      const themeToggle = document.getElementById('theme-toggle');
+      const slider = document.getElementById('slider');
+      const sliderLabel = document.getElementById('slider-label');
+      const revIdEl = document.getElementById('rev-id');
+      const revIndexEl = document.getElementById('rev-index');
+      const articleEl = document.getElementById('article');
+      const statusEl = document.getElementById('status');
+
+      function updateStatus(msg) {
+        statusEl.textContent = msg;
+      }
+
+      function normaliseTitle(title) {
+        return title.trim().replace(/ /g, '_');
+      }
+
+      async function fetchRevisionsMeta(title) {
+        const base = 'https://en.wikipedia.org/w/api.php';
+        const params = {
+          action: 'query',
+          prop: 'revisions',
+          titles: title,
+          rvprop: 'ids|timestamp',
+          rvlimit: 'max',
+          rvdir: 'newer',
+          format: 'json',
+          origin: '*'
+        };
+
+        let all = [];
+        let rvcontinue = null;
+
+        do {
+          const url = new URL(base);
+          const search = new URLSearchParams(params);
+          if (rvcontinue) search.set('rvcontinue', rvcontinue);
+          url.search = search.toString();
+
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Meta fetch failed: ' + res.status);
+          const data = await res.json();
+
+          const pages = data.query.pages;
+          const pageId = Object.keys(pages)[0];
+          const page = pages[pageId];
+          if (page.missing === '' || !page.revisions) {
+            throw new Error('Page not found or has no revisions.');
+          }
+
+          all.push(...page.revisions);
+          rvcontinue = data.continue && data.continue.rvcontinue;
+        } while (rvcontinue);
+
+        return all;
+      }
+
+      async function fetchRevisionContent(revid) {
+        const base = 'https://en.wikipedia.org/w/api.php';
+        const params = {
+          action: 'query',
+          prop: 'revisions',
+          revids: String(revid),
+          rvprop: 'content',
+          rvslots: 'main',
+          format: 'json',
+          origin: '*'
+        };
+        const url = new URL(base);
+        url.search = new URLSearchParams(params).toString();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Content fetch failed: ' + res.status);
+        const data = await res.json();
+        const pageId = Object.keys(data.query.pages)[0];
+        const rev = data.query.pages[pageId].revisions[0];
+        const slot = rev.slots ? rev.slots.main : rev;
+        const wikitext = slot['*'] || slot.content || '';
+        return wikitext;
+      }
+
+      function buildWordAges(texts) {
+        const firstSeen = new Map();
+
+        function cleanAndParagraphs(wikitext) {
+          let t = wikitext;
+
+          // strip infobox/templates aggressively
+          t = t.replace(/\{\{Infobox[\s\S]*?\n\}\}/gi, ' ');
+          t = t.replace(/\{\{.*?\}\}/gs, ' ');
+
+          // headings, refs, tags
+          t = t.replace(/==+.*?==+/g, ' ');
+          t = t.replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, ' ');
+          t = t.replace(/<[^>]+>/g, ' ');
+
+          // parameter-style lines: |key = value
+          t = t.replace(/\|\s*[\w-]+\s*=\s*.*?(?=\n\||\n\}\}|$)/g, ' ');
+
+          // normalise whitespace, keep blank lines as paragraph signals
+          t = t.replace(/\r/g, '\n');
+          t = t.replace(/[ \t]+/g, ' ');
+          t = t.replace(/\n{3,}/g, '\n\n');
+          t = t.trim();
+
+          const rawParas = t.split(/\n\n+/);
+          const paras = rawParas
+            .map(p => p.trim())
+            .filter(p => p.length > 40); // drop really short junk
+
+          return paras;
+        }
+
+        return texts.map((wikitext, idx) => {
+          const paragraphs = cleanAndParagraphs(wikitext);
+          const words = [];
+
+          paragraphs.forEach((para, pIndex) => {
+            const parts = para.split(/\s+/).filter(Boolean);
+            parts.forEach(w => {
+              const key = w.toLowerCase();
+              if (!firstSeen.has(key)) firstSeen.set(key, idx);
+              words.push({ value: w, firstSeenAt: firstSeen.get(key), para: pIndex });
+            });
+            // mark paragraph break
+            words.push({ value: '\n\n', break: true, para: pIndex });
+          });
+
+          return {
+            index: idx,
+            words
+          };
+        });
+      }
+
+      function renderRevision(index) {
+        if (!revisions.length) return;
+        index = Math.max(0, Math.min(index, revisions.length - 1));
+        const rev = revisions[index];
+        const prev = revisions[index - 1] || null;
+        currentIndex = index;
+
+        revIndexEl.textContent = index;
+        revIdEl.textContent = rev.id;
+        slider.value = index;
+        sliderLabel.textContent = (index + 1) + ' / ' + revisions.length;
+
+        const newWordSet = new Set();
+        if (prev) {
+          const prevWords = new Set(
+            prev.words
+              .filter(w => !w.break)
+              .map(w => w.value.toLowerCase())
+          );
+          rev.words.forEach(w => {
+            if (w.break) return;
+            const key = w.value.toLowerCase();
+            if (!prevWords.has(key)) newWordSet.add(key);
+          });
+        }
+
+        articleEl.innerHTML = '';
+        const nowIdx = index;
+        const maxAge = 40;
+
+          rev.words.forEach(word => {
+            if (word.break) {
+              articleEl.appendChild(document.createElement('br'));
+              articleEl.appendChild(document.createElement('br'));
+              return;
+            }
+
+            const age = nowIdx - word.firstSeenAt;
+            const t = Math.max(0, Math.min(age / maxAge, 1));
+
+            // NEW BEHAVIOUR:
+            // - brand new (t ≈ 0): dark, fully opaque
+            // - as t → 1: fades to transparent
+            const start = { r: 40, g: 20, b: 60 };     // dark violet for new words
+            const end   = { r: 40, g: 20, b: 60 };     // keep same hue, just fade opacity
+            const r = Math.round(start.r + (end.r - start.r) * t);
+            const g = Math.round(start.g + (end.g - start.g) * t);
+            const b = Math.round(start.b + (end.b - start.b) * t);
+            const opacity = 1 - t; // 1 → 0 over time
+
+            const span = document.createElement('span');
+            span.className = 'word';
+            span.textContent = word.value + ' ';
+            span.style.color = `rgba(${r},${g},${b},${opacity})`;
+
+            if (newWordSet.has(word.value.toLowerCase())) {
+              span.classList.add('word-new');
+            }
+
+            articleEl.appendChild(span);
+          });
+
+      }
+
+      function frame(timestamp) {
+        if (!playing) return;
+        if (!lastFrameTime) lastFrameTime = timestamp;
+        const delta = timestamp - lastFrameTime;
+        if (delta >= FRAME_DURATION) {
+          lastFrameTime = timestamp;
+          if (currentIndex < revisions.length - 1) {
+            renderRevision(currentIndex + 1);
+          } else if (LOOP_MODE) {
+            renderRevision(0);
+          } else {
+            playing = false;
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            updateStatus('Finished');
+            return;
+          }
+        }
+        requestAnimationFrame(frame);
+      }
+
+      // Load from Wikipedia
+      loadBtn.addEventListener('click', async () => {
+        const rawTitle = titleInput.value || '';
+        const normalized = normaliseTitle(rawTitle);
+        if (!normalized) {
+          updateStatus('Please enter a page title.');
+          return;
+        }
+
+        revisions = [];
+        currentIndex = 0;
+        playing = false;
+        playBtn.disabled = true;
+        pauseBtn.disabled = true;
+        downloadBtn.disabled = true;
+        loadBtn.disabled = true;
+        updateStatus('Loading revision list…');
+        articleEl.textContent = 'Loading revisions for "' + rawTitle + '"…';
+
+        try {
+          const meta = await fetchRevisionsMeta(normalized);
+          if (!meta.length) {
+            articleEl.textContent = 'No revisions found.';
+            updateStatus('No revisions');
+            return;
+          }
+
+          const texts = [];
+          for (let i = 0; i < meta.length; i++) {
+            const revid = meta[i].revid;
+            try {
+              const text = await fetchRevisionContent(revid);
+              texts.push(text);
+            } catch (err) {
+              console.error('Revision fetch failed', revid, err);
+              texts.push('');
+            }
+            if ((i + 1) % 10 === 0 || i === meta.length - 1) {
+              updateStatus(`Fetched ${i + 1} / ${meta.length} revisions…`);
+            }
+          }
+
+          const wordRevs = buildWordAges(texts);
+          revisions = wordRevs.map((r, idx) => ({
+            id: meta[idx].revid,
+            words: r.words
+          }));
+
+          slider.max = Math.max(0, revisions.length - 1);
+          slider.value = 0;
+          sliderLabel.textContent = '1 / ' + revisions.length;
+          renderRevision(0);
+          updateStatus(`Loaded ${revisions.length} revisions for "${rawTitle}".`);
+          playBtn.disabled = false;
+          pauseBtn.disabled = false;
+          downloadBtn.disabled = false;
+        } catch (err) {
+          console.error(err);
+          articleEl.textContent = 'Error: ' + err.message;
+          updateStatus('Error: ' + err.message);
+        } finally {
+          loadBtn.disabled = false;
+        }
+      });
+
+      // Load JSON from local file (offline)
+      const hiddenFileInput = document.createElement('input');
+      hiddenFileInput.type = 'file';
+      hiddenFileInput.accept = '.json';
+      hiddenFileInput.style.display = 'none';
+      document.body.appendChild(hiddenFileInput);
+
+      loadJsonBtn.addEventListener('click', () => {
+        hiddenFileInput.click();
+      });
+
+      hiddenFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        await loadFromFile(file);
+        hiddenFileInput.value = '';
+      });
+
+      async function loadFromFile(file) {
+        revisions = [];
+        currentIndex = 0;
+        playing = false;
+        playBtn.disabled = true;
+        pauseBtn.disabled = true;
+        downloadBtn.disabled = true;
+        updateStatus('Loading ' + file.name + '…');
+        articleEl.textContent = 'Loading JSON…';
+
+        try {
+          const text = await file.text();
+          const raw = JSON.parse(text);
+
+          const texts = raw.map(entry => entry.wikitext || '');
+          const wordRevs = buildWordAges(texts);
+          revisions = wordRevs.map((r, idx) => ({
+            id: raw[idx]?.revid || 'rev_' + idx,
+            words: r.words
+          }));
+
+          slider.max = Math.max(0, revisions.length - 1);
+          slider.value = 0;
+          sliderLabel.textContent = '1 / ' + revisions.length;
+          renderRevision(0);
+          updateStatus(`Loaded ${revisions.length} revisions from ${file.name}`);
+          playBtn.disabled = false;
+          pauseBtn.disabled = false;
+          downloadBtn.disabled = false;
+        } catch (err) {
+          console.error(err);
+          articleEl.textContent = 'Error: ' + err.message;
+          updateStatus('Error: ' + err.message);
+        }
+      }
+
+      // Download full JSON via API
+      downloadBtn.addEventListener('click', async () => {
+        if (!revisions.length) return;
+        updateStatus('Preparing full download…');
+        const fullData = [];
+
+        for (let i = 0; i < revisions.length; i++) {
+          const revid = revisions[i].id;
+          try {
+            const url = new URL('https://en.wikipedia.org/w/api.php');
+            url.search = new URLSearchParams({
+              action: 'query',
+              prop: 'revisions',
+              revids: String(revid),
+              rvprop: 'content|timestamp',
+              rvslots: 'main',
+              format: 'json',
+              origin: '*'
+            }).toString();
+
+            const res = await fetch(url);
+            const data = await res.json();
+            const pageId = Object.keys(data.query.pages)[0];
+            const rev = data.query.pages[pageId].revisions[0];
+            const slot = rev.slots ? rev.slots.main : rev;
+
+            fullData.push({
+              revid: revid,
+              timestamp: rev.timestamp,
+              wikitext: slot['*'] || slot.content || ''
+            });
+
+            if ((i + 1) % 10 === 0) {
+              updateStatus(`Preparing download… ${i + 1}/${revisions.length}`);
+            }
+          } catch (e) {
+            console.error('Failed revision', revid, e);
+          }
+        }
+
+        const safeTitle = (titleInput.value || 'page')
+          .trim()
+          .replace(/[^a-z0-9_-]/gi, '_');
+        const filename = `revisions_${safeTitle}.json`;
+        const blob = new Blob([JSON.stringify(fullData, null, 2)], {
+          type: 'application/json'
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        updateStatus(`Downloaded ${fullData.length} full revisions.`);
+      });
+
+      // Playback controls
+      playBtn.addEventListener('click', () => {
+        if (!revisions.length) return;
+        playing = true;
+        playBtn.disabled = true;
+        pauseBtn.disabled = false;
+        updateStatus('Playing…');
+        lastFrameTime = 0;
+        requestAnimationFrame(frame);
+      });
+
+      pauseBtn.addEventListener('click', () => {
+        playing = false;
+        playBtn.disabled = false;
+        pauseBtn.disabled = true;
+        updateStatus('Paused');
+      });
+
+      loopBtn.addEventListener('click', () => {
+        LOOP_MODE = !LOOP_MODE;
+        loopBtn.textContent = LOOP_MODE ? '🔄 Loop: On' : '🔄 Loop: Off';
+      });
+
+      slider.addEventListener('input', () => {
+        const idx = parseInt(slider.value, 10) || 0;
+        renderRevision(idx);
+        if (!playing) updateStatus('Revision ' + idx);
+      });
+
+      titleInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') loadBtn.click();
+      });
+
+      // Theme toggle
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        themeToggle.textContent = theme === 'dark' ? '☀ Day' : '🌙 Night';
+      }
+
+      const savedTheme = localStorage.getItem('rev-theme');
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        applyTheme(savedTheme);
+      } else {
+        applyTheme('light');
+      }
+
+      themeToggle.addEventListener('click', () => {
+        const current =
+          document.documentElement.getAttribute('data-theme') === 'dark'
+            ? 'dark'
+            : 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem('rev-theme', next);
+      });
+    </script>
+  </body>
+</html>
