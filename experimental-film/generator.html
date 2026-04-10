@@ -2,61 +2,209 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sprite Sheet Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experimental Film Generator</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: white; padding: 50px; }
-        button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #00ffcc; border: none; font-weight: bold;}
-        canvas { display: none; /* Hide the massive canvas to prevent browser lag */ }
+        body { 
+            font-family: sans-serif; 
+            text-align: center; 
+            background: #222; 
+            color: white; 
+            padding: 20px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .controls {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        select, input[type="checkbox"] {
+            margin-left: 10px;
+            padding: 5px;
+        }
+        button { 
+            padding: 15px 30px; 
+            font-size: 1.2rem; 
+            cursor: pointer; 
+            background: #00ffcc; 
+            color: #000;
+            border: none; 
+            font-weight: bold;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+        button:hover { background: #00ccaa; }
+        
+        /* The preview canvas (just shows a 3x3 sample) */
+        #previewCanvas {
+            border: 2px solid #555;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAACVJREFUKFNjZCASMDKgAnv37v3PBEWcIFyNQSyJUVB4MDSaBQAAm5EEB679BnsAAAAASUVORK5CYII='); /* Checkered background to show transparency */
+            margin-top: 20px;
+        }
+        
+        .status { margin-top: 10px; color: #aaa; font-size: 0.9em; }
+
+        /* Secret Hotkeys Section */
+        .secrets {
+            margin-top: 30px;
+            background: #1a1a1a;
+            padding: 15px 30px;
+            border-radius: 8px;
+            border: 1px dashed #555;
+            text-align: left;
+            color: #888;
+            font-size: 0.9em;
+        }
+        .secrets h3 { margin-top: 0; color: #aaa; font-size: 1em; text-align: center; }
+        .secrets ul { list-style-type: none; padding: 0; margin: 0; }
+        .secrets li { margin: 8px 0; }
+        .secrets strong { color: #00ffcc; display: inline-block; width: 25px;}
     </style>
 </head>
 <body>
-    <h1>16mm Sprite Sheet Template Generator</h1>
-    <p>Generating a 8640x6480 pixel grid (54x54 frames). This might take a second!</p>
-    <button id="downloadBtn">Download Template PNG</button>
-    <canvas id="gridCanvas"></canvas>
+    <h1>16mm Sprite Sheet Generator (57x57)</h1>
+    <p>Configure your style, preview the top-left 3x3 frames, and download the full 3249-frame image.</p>
+    
+    <div class="controls">
+        <label>
+            Style: 
+            <select id="bgStyle">
+                <option value="random">Random Colors</option>
+                <option value="white">Uniform White</option>
+                <option value="transparent">Transparent</option>
+            </select>
+        </label>
+        <label>
+            <input type="checkbox" id="showNumbers" checked> Numbers
+        </label>
+        <label>
+            <input type="checkbox" id="showBorders" checked> Borders
+        </label>
+    </div>
+
+    <button id="downloadBtn">Generate & Download Grid (sprite.png)</button>
+    <div class="status" id="statusMsg">Locked Settings: 160x120px frames | 57 Columns x 57 Rows</div>
+
+    <div class="secrets">
+        <h3>Player Secret Hotkeys</h3>
+        <ul>
+            <li><strong>R</strong> : Repeat/Reset animation to frame 1</li>
+            <li><strong>C</strong> : Choose and load a local sprite sheet file</li>
+            <li><strong>S</strong> : Toggle Optical Sound generation</li>
+            <li><strong>F</strong> : Toggle Full Screen mode</li>
+            <li><strong>D</strong> : Record and Download as Movie (.webm)</li>
+            <li><strong>G</strong> : Open this Generator page</li>
+        </ul>
+    </div>
+
+    <h3>Preview (3x3 grid)</h3>
+    <canvas id="previewCanvas"></canvas>
 
     <script>
-        const canvas = document.getElementById('gridCanvas');
-        const ctx = canvas.getContext('2d');
+        // --- FIXED SETTINGS ---
+        const frameW = 160;   
+        const frameH = 120;   
+        const cols = 57;     
+        const rows = 57;
         
-        // The Blueprint Math
-        const frameW = 160;
-        const frameH = 120;
-        const cols = 54;
-        const totalFrames = 2880; // 2 mins at 24fps
-        
-        canvas.width = cols * frameW;
-        canvas.height = Math.ceil(totalFrames / cols) * frameH;
+        // UI Elements
+        const previewCanvas = document.getElementById('previewCanvas');
+        const pCtx = previewCanvas.getContext('2d');
+        const bgStyle = document.getElementById('bgStyle');
+        const showNumbers = document.getElementById('showNumbers');
+        const showBorders = document.getElementById('showBorders');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusMsg = document.getElementById('statusMsg');
 
-        // Fill background black
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Set preview canvas to exactly 3x3 frames
+        previewCanvas.width = frameW * 3;
+        previewCanvas.height = frameH * 3;
 
-        // Draw the grid
-        ctx.strokeStyle = '#333'; // Dark grey grid lines
-        ctx.fillStyle = '#00ffcc'; // Neon text
-        ctx.font = '20px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        // Draw function (used for both preview and final generation)
+        function drawGrid(ctx, drawCols, drawRows, isPreview = false) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear previous
 
-        for (let i = 0; i < totalFrames; i++) {
-            let col = i % cols;
-            let row = Math.floor(i / cols);
-            let x = col * frameW;
-            let y = row * frameH;
+            for (let row = 0; row < drawRows; row++) {
+                for (let col = 0; col < drawCols; col++) {
+                    let x = col * frameW;
+                    let y = row * frameH;
+                    let frameNumber = (row * cols) + col + 1; // Actual frame number in the 57x57 grid
 
-            // Draw Box
-            ctx.strokeRect(x, y, frameW, frameH);
-            // Draw Number
-            ctx.fillText(i + 1, x + (frameW / 2), y + (frameH / 2));
+                    // 1. Draw Background
+                    if (bgStyle.value === 'random') {
+                        const r = Math.floor(Math.random() * 200) + 50; // Avoid pure black
+                        const g = Math.floor(Math.random() * 200) + 50;
+                        const b = Math.floor(Math.random() * 200) + 50;
+                        ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        ctx.fillRect(x, y, frameW, frameH);
+                    } else if (bgStyle.value === 'white') {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(x, y, frameW, frameH);
+                    } 
+                    // If transparent, we don't draw a background fill
+
+                    // 2. Draw Borders
+                    if (showBorders.checked) {
+                        ctx.strokeStyle = bgStyle.value === 'transparent' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x, y, frameW, frameH);
+                    }
+
+                    // 3. Draw Numbers
+                    if (showNumbers.checked) {
+                        ctx.fillStyle = bgStyle.value === 'white' ? 'black' : 'white';
+                        ctx.font = `bold ${frameH * 0.3}px monospace`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(frameNumber, x + (frameW / 2), y + (frameH / 2));
+                    }
+                }
+            }
         }
 
-        // Handle Download
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = '16mm_2min_template.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+        // Update preview when settings change
+        function updatePreview() {
+            drawGrid(pCtx, 3, 3, true);
+        }
+
+        bgStyle.addEventListener('change', updatePreview);
+        showNumbers.addEventListener('change', updatePreview);
+        showBorders.addEventListener('change', updatePreview);
+
+        // Initial preview
+        updatePreview();
+
+        // Handle Download of full 57x57 grid
+        downloadBtn.addEventListener('click', () => {
+            statusMsg.textContent = "Generating high-res grid... Please wait.";
+            downloadBtn.disabled = true;
+
+            // Use a slight timeout to allow the UI to update the "Please wait" text before freezing
+            setTimeout(() => {
+                // Create massive off-screen canvas
+                const offscreenCanvas = document.createElement('canvas');
+                offscreenCanvas.width = cols * frameW;
+                offscreenCanvas.height = rows * frameH;
+                const oCtx = offscreenCanvas.getContext('2d', { alpha: bgStyle.value === 'transparent' });
+
+                // Draw all 3,249 frames
+                drawGrid(oCtx, cols, rows, false);
+
+                // Download
+                const link = document.createElement('a');
+                link.download = 'sprite.png'; // Saves as sprite.png for the player to use easily
+                link.href = offscreenCanvas.toDataURL('image/png');
+                link.click();
+
+                statusMsg.textContent = "Locked Settings: 160x120px frames | 57 Columns x 57 Rows";
+                downloadBtn.disabled = false;
+            }, 50);
         });
     </script>
 </body>

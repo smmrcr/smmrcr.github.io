@@ -2,65 +2,316 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>16mm Sprite Player</title>
+    <title>Experimental Film</title>
     <style>
         body {
-            margin: 0; display: flex; justify-content: center; align-items: center;
-            height: 100vh; background-color: #111;
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            height: 100vh; 
+            background-color: #000;
+            overflow: hidden;
+            font-family: monospace;
+            color: white;
         }
 
-        .projector {
-            width: 160px;  /* Exact width of one frame */
-            height: 120px; /* Exact height of one frame */
-            background-image: url('16mm_2min_template.png'); 
-            background-repeat: no-repeat;
-            
-            /* Scale it up so it looks like a movie screen */
+        #playerContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            transition: background 0.3s;
+        }
+
+        canvas {
+            width: 160px;  
+            height: 120px; 
             transform: scale(4); 
             image-rendering: pixelated; 
             box-shadow: 0 0 50px rgba(255,255,255,0.1);
+            background: #111; 
         }
+
+        #recIndicator {
+            display: none;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: red;
+            font-weight: bold;
+            font-size: 24px;
+            animation: blink 1s infinite;
+            z-index: 100;
+        }
+
+        #soundIndicator {
+            display: none;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ffcc;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 100;
+        }
+
+        #loading {
+            position: absolute;
+            z-index: 10;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div class="projector" id="screen"></div>
+    <div id="playerContainer">
+        <div id="loading">Loading...</div>
+        <canvas id="screen" width="160" height="120"></canvas>
+    </div>
+    
+    <div id="recIndicator">● REC</div>
+    <div id="soundIndicator">♪ OPTICAL SOUND ON</div>
+    
+    <!-- Hidden file input for loading local sprite sheets -->
+    <input type="file" id="localFileInput" accept="image/*" style="display: none;">
 
     <script>
-        const screen = document.getElementById('screen');
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+        const loading = document.getElementById('loading');
+        const recIndicator = document.getElementById('recIndicator');
+        const soundIndicator = document.getElementById('soundIndicator');
+        const playerContainer = document.getElementById('playerContainer');
+        const localFileInput = document.getElementById('localFileInput');
         
-        // The Blueprint Math
+        // --- FIXED SETTINGS ---
         const frameW = 160;
         const frameH = 120;
-        const cols = 54;
-        const totalFrames = 2880;
+        const cols = 57;
+        const totalFrames = 3249; 
         const fps = 24;
         
         let currentFrame = 0;
+        let spriteSheet = new Image();
+        let isPlaying = false;
+        
+        // --- WEB AUDIO API (OPTICAL SOUND) ---
+        let audioCtx, masterGain, oscR, oscG, oscB;
+        let soundEnabled = false;
 
-        function playFilm() {
-            // Calculate which column and row we are currently on
-            let col = currentFrame % cols;
-            let row = Math.floor(currentFrame / cols);
+        function initAudio() {
+            // Browsers require audio to be initialized after a user interaction
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
             
-            // Calculate the exact pixel offset
-            let posX = -(col * frameW);
-            let posY = -(row * frameH);
-            
-            // Apply it to the CSS
-            screen.style.backgroundPosition = `${posX}px ${posY}px`;
-            
-            // Move to next frame
-            currentFrame++;
-            
-            // Loop back to start if we reach 2 minutes
-            if (currentFrame >= totalFrames) {
-                currentFrame = 0;
-            }
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0; // Start muted
+            masterGain.connect(audioCtx.destination);
+
+            // Create 3 distinct oscillators for RGB channels
+            oscR = audioCtx.createOscillator(); oscR.type = 'sine'; oscR.connect(masterGain); oscR.start();
+            oscG = audioCtx.createOscillator(); oscG.type = 'triangle'; oscG.connect(masterGain); oscG.start();
+            oscB = audioCtx.createOscillator(); oscB.type = 'square'; oscB.connect(masterGain); oscB.start();
         }
 
-        // Start the projector! (1000ms / 24fps = 41.66ms per frame)
-        setInterval(playFilm, 1000 / fps);
+        function processOpticalSound() {
+            if (!soundEnabled || !audioCtx) return;
+
+            // 1. "Scan" the current frame by reading its pixels
+            // We sample a smaller area (e.g. center) to optimize performance at 24fps
+            const imgData = ctx.getImageData(0, 0, frameW, frameH).data;
+            
+            let rSum = 0, gSum = 0, bSum = 0;
+            let sampleCount = 0;
+            
+            // Step through pixels (by 4s because data is R,G,B,Alpha)
+            // We jump by 40 to only sample every 10th pixel for speed
+            for (let i = 0; i < imgData.length; i += 40) {
+                rSum += imgData[i];
+                gSum += imgData[i+1];
+                bSum += imgData[i+2];
+                sampleCount++;
+            }
+
+            const avgR = rSum / sampleCount;
+            const avgG = gSum / sampleCount;
+            const avgB = bSum / sampleCount;
+
+            // 2. Map RGB values to audio frequencies
+            // Red = Bass (100 - 355 Hz)
+            oscR.frequency.setTargetAtTime(100 + avgR, audioCtx.currentTime, 0.05);
+            // Green = Mids (300 - 810 Hz)
+            oscG.frequency.setTargetAtTime(300 + (avgG * 2), audioCtx.currentTime, 0.05);
+            // Blue = Highs (800 - 1565 Hz)
+            oscB.frequency.setTargetAtTime(800 + (avgB * 3), audioCtx.currentTime, 0.05);
+
+            // 3. Map overall brightness to Volume (0.0 to 0.15 max to protect ears)
+            const brightness = (avgR + avgG + avgB) / (3 * 255);
+            masterGain.gain.setTargetAtTime(brightness * 0.15, audioCtx.currentTime, 0.05);
+        }
+
+        // --- RECORDING VARIABLES ---
+        let isRecording = false;
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        // Load the image
+        spriteSheet.src = '2min_film.png'; 
+        
+        spriteSheet.onload = () => {
+            loading.style.display = 'none';
+            isPlaying = true;
+            currentFrame = 0; // Reset to the start of the image
+            requestAnimationFrame(playFilm);
+        };
+
+        spriteSheet.onerror = () => {
+            loading.textContent = "Error: Cannot find 'sprite.png' or selected file.";
+            loading.style.color = "red";
+        };
+
+        let lastTime = 0;
+        const frameDuration = 1000 / fps;
+
+        function playFilm(timestamp) {
+            if (!isPlaying) return; // Stop loop if paused or loading new file
+
+            if (timestamp - lastTime >= frameDuration) {
+                lastTime = timestamp;
+
+                let col = currentFrame % cols;
+                let row = Math.floor(currentFrame / cols);
+                let sourceX = col * frameW;
+                let sourceY = row * frameH;
+                
+                // Draw the frame
+                ctx.clearRect(0, 0, frameW, frameH);
+                ctx.drawImage(spriteSheet, sourceX, sourceY, frameW, frameH, 0, 0, frameW, frameH);
+                
+                // Read the pixels and make sound!
+                processOpticalSound();
+
+                currentFrame++;
+                
+                if (currentFrame >= totalFrames) {
+                    currentFrame = 0;
+                    if (isRecording) stopRecording();
+                }
+            }
+            requestAnimationFrame(playFilm);
+        }
+
+        // --- HIDDEN DESKTOP CONTROLS ---
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // 's' = Toggle Optical Sound
+            if (key === 's') {
+                if (!audioCtx) initAudio(); // Init on first press
+                
+                soundEnabled = !soundEnabled;
+                soundIndicator.style.display = soundEnabled ? 'block' : 'none';
+                
+                // Mute immediately if turned off
+                if (!soundEnabled && audioCtx) {
+                    masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+                }
+            }
+
+            // 'r' = Repeat/Reset
+            if (key === 'r') currentFrame = 0;
+
+            // 'c' = Choose/Open local file
+            if (key === 'c') localFileInput.click();
+
+            // 'g' = Open Generator
+            if (key === 'g') window.location.href = 'generator.html';
+
+            // 'f' = Full Screen
+            if (key === 'f') {
+                if (!document.fullscreenElement) {
+                    playerContainer.requestFullscreen().catch(err => console.log(err));
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            // 'd' = Download as Movie (WebM)
+            if (key === 'd') {
+                if (!isRecording) startRecording();
+            }
+        });
+
+        // --- LOCAL FILE HANDLING ---
+        localFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                isPlaying = false; // Kill the current animation loop
+                loading.style.display = 'block';
+                loading.textContent = `Loading ${file.name}...`;
+                loading.style.color = "white";
+                
+                // Create a local URL for the selected image
+                const objectURL = URL.createObjectURL(file);
+                spriteSheet.src = objectURL;
+            }
+            // Clear the input value so the same file can be re-selected if needed
+            e.target.value = '';
+        });
+
+        // --- RECORDING LOGIC ---
+        function startRecording() {
+            isRecording = true;
+            currentFrame = 0;
+            recordedChunks = [];
+            recIndicator.style.display = 'block';
+
+            // IMPORTANT: If sound is enabled, we record the canvas AND the audio!
+            const canvasStream = canvas.captureStream(fps);
+            let finalStream = canvasStream;
+
+            if (soundEnabled && audioCtx) {
+                const audioDestination = audioCtx.createMediaStreamDestination();
+                masterGain.connect(audioDestination);
+                
+                // Combine video and audio tracks
+                const audioTracks = audioDestination.stream.getAudioTracks();
+                finalStream = new MediaStream([...canvasStream.getTracks(), ...audioTracks]);
+            }
+
+            mediaRecorder = new MediaRecorder(finalStream, { mimeType: 'video/webm' });
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = '16mm_animation.webm';
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            };
+            
+            mediaRecorder.start();
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            recIndicator.style.display = 'none';
+            if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        }
     </script>
 </body>
 </html>
