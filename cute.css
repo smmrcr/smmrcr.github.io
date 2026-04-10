@@ -115,3 +115,30 @@ a:hover {
 /* selected link */
 a:active {
     color: blue;
+}
+
+/* --- ARRHYTHMIC CLOCK STYLES --- */
+.mini-clock {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  position: relative;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.mini-hand {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform-origin: bottom;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+.blink { 
+  animation: blinker 1s linear infinite; 
+}
+@keyframes blinker { 
+  50% { opacity: 0; } 
+}

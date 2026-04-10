@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pull Back - An Infinite Film</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050505;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 1s ease;
+            color: #fff;
+        }
+
+        h1 {
+            font-weight: normal;
+            letter-spacing: 10px;
+            margin-bottom: 40px;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        #start-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 15px 40px;
+            font-size: 1rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-transform: lowercase;
+            outline: none;
+        }
+
+        #start-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .hint {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #666;
+            letter-spacing: 1px;
+        }
+
+        /* CRT/Film Grain Overlay */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1>Pull Back</h1>
+        <button id="start-btn">initiate sequence</button>
+        <div class="hint">scroll to shift perspective</div>
+    </div>
+
+    <div class="overlay"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+
+        let width, height, cx, cy;
+        
+        // Z-axis/Time variable. 
+        // Starts negative so the "Core" image is zoomed all the way in.
+        let globalZ = -1.2; 
+        const AUTO_SPEED = 0.0015;
+        const CORE_INDEX = 0; // The innermost painting
+        
+        let animationFrameId = null;
+        
+        // Audio Variables
+        let audioCtx;
+        const NUM_OSCILLATORS = 6;
+        let oscillators = [];
+        let gains = [];
+        const BASE_FREQ = 110; // A2
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            cx = width / 2;
+            cy = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --------------------------------------------------------
+        // REVERSE SHEPARD TONE (AUDIO)
+        // --------------------------------------------------------
+        function initAudio() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.4;
+            
+            // Add a lowpass filter to make it sound muffled and distant
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 800;
+            
+            masterGain.connect(filter);
+            filter.connect(audioCtx.destination);
+
+            for (let i = 0; i < NUM_OSCILLATORS; i++) {
+                let osc = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+
+                osc.type = 'sine';
+                
+                osc.connect(gainNode);
+                gainNode.connect(masterGain);
+                
+                osc.start();
+                
+                oscillators.push(osc);
+                gains.push(gainNode);
+            }
+        }
+
+        function updateAudio() {
+            if (!audioCtx) return;
+
+            // Map the global Z (our zoom level) directly to the Shepard tone phase.
+            // As Z increases (pulling back), phase decreases, creating an endless descending tone.
+            let phase = globalZ / 3; 
+
+            for (let i = 0; i < NUM_OSCILLATORS; i++) {
+                // Calculate individual phase for this oscillator (0 to 1)
+                // The (1 - ...) creates the reverse (descending) effect relative to Z
+                let p = (1 - ((phase + i / NUM_OSCILLATORS) % 1 + 1) % 1);
+
+                // Frequency spans 6 octaves exponentially
+                let freq = BASE_FREQ * Math.pow(2, p * NUM_OSCILLATORS);
+                
+                // Gain is a bell curve: loud in the middle octaves, silent at the top/bottom
+                let volume = Math.pow(Math.sin(p * Math.PI), 2) / NUM_OSCILLATORS;
+
+                // Smoothly update audio parameters
+                oscillators[i].frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+                gains[i].gain.setTargetAtTime(volume, audioCtx.currentTime, 0.05);
+            }
+        }
+
+        // --------------------------------------------------------
+        // VISUAL GENERATION
+        // --------------------------------------------------------
+
+        // Helper to draw a thick frame with a transparent hole in the middle
+        function drawFrameBorder(innerSize, outerSize, fillStyle) {
+            ctx.fillStyle = fillStyle;
+            ctx.beginPath();
+            // Outer rectangle (Clockwise)
+            ctx.rect(-outerSize, -outerSize, outerSize * 2, outerSize * 2);
+            // Inner hole (Counter-Clockwise to punch it out)
+            ctx.rect(innerSize, -innerSize, -innerSize * 2, innerSize * 2);
+            ctx.fill();
+        }
+
+        // The original image we start on (The Core)
+        function drawCoreImage(size) {
+            // Sky
+            let grad = ctx.createLinearGradient(0, -size, 0, size);
+            grad.addColorStop(0, '#2c3e50');
+            grad.addColorStop(0.5, '#e74c3c');
+            grad.addColorStop(1, '#f1c40f');
+            ctx.fillStyle = grad;
+            ctx.fillRect(-size, -size, size * 2, size * 2);
+
+            // Sun
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mountains
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.moveTo(-size, size);
+            ctx.lineTo(-size * 0.4, -size * 0.1);
+            ctx.lineTo(size * 0.2, size * 0.4);
+            ctx.lineTo(size * 0.6, size * 0.1);
+            ctx.lineTo(size, size);
+            ctx.fill();
+        }
+
+        // --- NEW: Seeded Random Number Generator ---
+        // Generates consistent random numbers based on a seed
+        function getSeededRandom(seed) {
+            return function() {
+                seed = (seed * 9301 + 49297) % 233280;
+                return seed / 233280;
+            }
+        }
+
+        // --- NEW: Procedural Infinite Variations ---
+        // Defines the endless concentric themes wrapped around the core
+        function drawTheme(themeIndex, innerSize) {
+            const outerSize = innerSize * 15; 
+            
+            // Initialize the random generator for THIS specific layer.
+            // This ensures that layer 5 always looks like layer 5, even if you scroll away and back.
+            const random = getSeededRandom(themeIndex * 12345 + 6789);
+
+            // Generate procedural color palette for this variation
+            const hue = random() * 360;
+            const sat = 10 + random() * 30; // Desaturated, brutalist vibe (10-40%)
+            const lit = 5 + random() * 15;  // Very dark (5-20%)
+            const baseColor = `hsl(${hue}, ${sat}%, ${lit}%)`;
+            
+            // Accent color for lights/hazard elements
+            const accentHue = (hue + 180 + (random() * 60 - 30)) % 360; 
+            const accentColor = `hsl(${accentHue}, 80%, 50%)`;
+
+            // Draw base frame
+            drawFrameBorder(innerSize, outerSize, baseColor);
+            
+            // Procedural Inner Trim/Bevel
+            const trimThickness = innerSize * (0.02 + random() * 0.08);
+            ctx.strokeStyle = `hsl(${hue}, ${sat}%, ${lit - 5}%)`; // Slightly darker
+            ctx.lineWidth = trimThickness;
+            ctx.strokeRect(-innerSize - trimThickness/2, -innerSize - trimThickness/2, innerSize * 2 + trimThickness, innerSize * 2 + trimThickness);
+
+            // --- Apply Random Structural Variations ---
+
+            // 1. Paneling / Acoustic Ridges
+            if (random() > 0.4) {
+                const numPanels = 2 + Math.floor(random() * 5);
+                const panelSpacing = innerSize * (0.1 + random() * 0.3);
+                ctx.strokeStyle = `hsl(${hue}, ${sat}%, ${lit - 3}%)`;
+                ctx.lineWidth = innerSize * 0.01;
+                
+                for(let r = innerSize * 1.1; r < innerSize * (1.1 + numPanels * panelSpacing); r += panelSpacing) {
+                    ctx.strokeRect(-r, -r, r * 2, r * 2);
+                }
+            }
+
+            // 2. Scaffolding / Trusses
+            if (random() > 0.5) {
+                ctx.strokeStyle = `hsl(${hue}, ${sat}%, ${lit + 10}%)`; // Lighter metal
+                ctx.lineWidth = innerSize * (0.01 + random() * 0.03);
+                
+                const step = innerSize * (0.3 + random() * 0.5);
+                const trussDepth = innerSize * (1.2 + random() * 0.8);
+
+                // Draw struts projecting outwards from the inner square
+                for (let x = -innerSize; x <= innerSize; x += step) {
+                    // Top edge
+                    ctx.beginPath(); ctx.moveTo(x, -innerSize); ctx.lineTo(x + (random()>0.5?step:-step), -trussDepth); ctx.stroke();
+                    // Bottom edge
+                    ctx.beginPath(); ctx.moveTo(x, innerSize); ctx.lineTo(x + (random()>0.5?step:-step), trussDepth); ctx.stroke();
+                }
+                for (let y = -innerSize; y <= innerSize; y += step) {
+                    // Left edge
+                    ctx.beginPath(); ctx.moveTo(-innerSize, y); ctx.lineTo(-trussDepth, y + (random()>0.5?step:-step)); ctx.stroke();
+                    // Right edge
+                    ctx.beginPath(); ctx.moveTo(innerSize, y); ctx.lineTo(trussDepth, y + (random()>0.5?step:-step)); ctx.stroke();
+                }
+            }
+
+            // 3. Hazard Lights / Glowing Elements
+            if (random() > 0.3) {
+                const numLights = 2 + Math.floor(random() * 6);
+                
+                ctx.fillStyle = accentColor;
+                ctx.shadowColor = accentColor;
+                ctx.shadowBlur = innerSize * 0.2; // intense glow
+
+                for(let i = 0; i < numLights; i++) {
+                    // Place lights randomly around the perimeter of the inner hole
+                    const side = Math.floor(random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+                    const posAlongEdge = -innerSize + (random() * innerSize * 2);
+                    const offset = innerSize * (1.05 + random() * 0.2); // Just outside the rim
+                    const lightSize = innerSize * (0.02 + random() * 0.06);
+
+                    let lx, ly;
+                    if (side === 0) { lx = posAlongEdge; ly = -offset; }
+                    else if (side === 1) { lx = offset; ly = posAlongEdge; }
+                    else if (side === 2) { lx = posAlongEdge; ly = offset; }
+                    else { lx = -offset; ly = posAlongEdge; }
+
+                    // Make some lights blink randomly based on time (globalZ)
+                    if (random() > 0.5 || Math.sin(globalZ * 20 * random()) > 0) {
+                        ctx.beginPath();
+                        ctx.arc(lx, ly, lightSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.shadowBlur = 0; // reset
+            }
+        }
+
+        // --------------------------------------------------------
+        // MAIN LOOP
+        // --------------------------------------------------------
+        function animate() {
+            // Auto pull-back
+            globalZ += AUTO_SPEED;
+            
+            // Sync the audio drone to the zoom level
+            updateAudio();
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Calculate which layers to draw.
+            // i represents the index of the nested box.
+            // Smallest objects (furthest away) have lowest index, drawn first (Painter's algorithm)
+            let min_i = Math.max(CORE_INDEX, Math.floor(globalZ - 5)); 
+            let max_i = Math.floor(globalZ + 2);
+
+            const BASE_INNER_SIZE = 300;
+            const SCALE_MULTIPLIER = 4; // Each layer is 4x larger than the one inside it
+
+            // Add a slight nauseating rotation that shifts as we pull back
+            let cameraRotation = Math.sin(globalZ * 0.5) * 0.1;
+
+            for (let i = min_i; i <= max_i; i++) {
+                // The magic formula: as Z increases, S decreases, creating the pull-back
+                let S = Math.pow(SCALE_MULTIPLIER, i - globalZ);
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                
+                // Slight parallax/sway
+                ctx.translate(Math.sin(globalZ + i) * 20 * S, Math.cos(globalZ + i) * 20 * S);
+                
+                ctx.rotate(cameraRotation + (i * 0.05)); // Each layer is slightly twisted
+                ctx.scale(S, S);
+
+                if (i === CORE_INDEX) {
+                    drawCoreImage(BASE_INNER_SIZE);
+                } else {
+                    drawTheme(i, BASE_INNER_SIZE);
+                }
+
+                ctx.restore();
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // --------------------------------------------------------
+        // INTERACTIVITY
+        // --------------------------------------------------------
+        window.addEventListener('wheel', (e) => {
+            // Adjust Z based on scroll. 
+            // Scrolling down (positive deltaY) pulls back further (+Z)
+            globalZ += e.deltaY * 0.002;
+            
+            // Don't let user zoom past the starting painting
+            if (globalZ < -1.5) globalZ = -1.5; 
+        }, { passive: true });
+
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            startScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                animate();
+            }, 1000);
+        });
+
+    </script>
+</body>
+</html>

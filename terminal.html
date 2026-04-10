@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Log Recreation</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgb(0, 0, 0);
+            color: #FACC15; /* Yellow text */
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: bold;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #text-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: clamp(20px, 5vw, 60px);
+            box-sizing: border-box;
+            font-size: clamp(16px, 3.5vw, 32px);
+            line-height: 1.6;
+            letter-spacing: 1px;
+            white-space: pre-wrap;
+            clip-path: inset(0 0 0 0);
+            -webkit-clip-path: inset(0 0 0 0);
+        }
+
+        /* The start screen overlay */
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        #start-btn {
+            background: transparent;
+            color: #FACC15;
+            border: 2px solid #FACC15;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: monospace;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        #start-btn:hover {
+            background: #FACC15;
+            color: black;
+        }
+
+        /* Screen shake animation for the final explosion */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-2px, -3px) rotate(-1deg); }
+            20% { transform: translate(-4px, 0px) rotate(1deg); }
+            30% { transform: translate(4px, 3px) rotate(0deg); }
+            40% { transform: translate(2px, -2px) rotate(1deg); }
+            50% { transform: translate(-2px, 3px) rotate(-1deg); }
+            60% { transform: translate(-4px, 2px) rotate(0deg); }
+            70% { transform: translate(4px, 2px) rotate(-1deg); }
+            80% { transform: translate(-2px, -2px) rotate(1deg); }
+            90% { transform: translate(2px, 3px) rotate(0deg); }
+            100% { transform: translate(1px, -3px) rotate(-1deg); }
+        }
+
+        .shake {
+            animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <button id="start-btn">Begin Log</button>
+    </div>
+
+    <div id="text-container"></div>
+
+    <script>
+        const textToType = "MY SHIFT BEGAN AT MIDNIGHT ON APRIL 26. I HAD TO TAKE MEASUREMENTS IN THE REACTOR ROOMS OF UNITS 3 AND 4, AND CHECK THE DATA UNITS. I CHECKED UNIT 3; BUT ON MY WAY TO UNIT 4 I REMEMBERED IT WAS IN THE PROCESS OF BEING SHUT DOWN, SO I DECIDED THERE WAS NOTHING FOR ME TO DO THERE. I RETURNED TO MY DUTY ROOM TO HAVE SOME TEA. THEN WE HEARD A FLAT AND POWERFUL THUD. WE DECIDED THE TURBINE OPERATOR HAD PRODUCED A HYDRAULIC HIT, WHICH SOMETIMES HAPPENS DURING SHUTDOWN. AT THAT MOMENT WE HEARD ANOTHER FLAT THUD. THE LIGHTS WENT OUT; THE LIGHT ON THE CONTROL PANEL OF UNIT 4 WENT OUT AS WELL. JUST AS IN A HORROR FILM, THE BLAST BLEW OUT THE DOUBLE DOORS THAT HAD BEEN LATCHED. BLACK-RED DUST STARTED COMING OUT OF THE VENTILATION VENT. IN A FEW SECONDS THE EMERGENCY LIGHTS WENT ON. WE PUT ON OUR GAS MASKS . .";
+
+        const textContainer = document.getElementById('text-container');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        
+        let audioCtx;
+        let isPlaying = false;
+        let currentProgress = 0;
+        let typingDuration = 0; // Variable to store exactly how long typing took
+
+        // Audio Routing Nodes for Reverb
+        let masterInput, convolver, dryGain, wetGain;
+
+        // Initialize AudioContext on user interaction
+        function initAudio() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            setupReverb();
+        }
+
+        // Generate synthetic impulse response for the reverb (makes it sound like a large, metallic room)
+        function setupReverb() {
+            masterInput = audioCtx.createGain();
+            dryGain = audioCtx.createGain();
+            wetGain = audioCtx.createGain();
+            
+            const length = audioCtx.sampleRate * 4; // 4 seconds tail
+            const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
+            const left = impulse.getChannelData(0);
+            const right = impulse.getChannelData(1);
+            
+            for (let i = 0; i < length; i++) {
+                const decay = Math.pow(1 - i / length, 5); // Metallic, exponential decay
+                left[i] = (Math.random() * 2 - 1) * decay;
+                right[i] = (Math.random() * 2 - 1) * decay;
+            }
+            
+            convolver = audioCtx.createConvolver();
+            convolver.buffer = impulse;
+            
+            // Start 100% dry, 0% wet
+            dryGain.gain.value = 1;
+            wetGain.gain.value = 0;
+            
+            masterInput.connect(dryGain);
+            dryGain.connect(audioCtx.destination);
+            
+            masterInput.connect(convolver);
+            convolver.connect(wetGain);
+            wetGain.connect(audioCtx.destination);
+        }
+
+        // Procedural synthesis of a geiger counter/teletype click
+        function playClick(frequency = 800) {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = 'square';
+            // Randomize frequency slightly for an organic, unpredictable sound
+            osc.frequency.setValueAtTime(frequency + (Math.random() * 500), audioCtx.currentTime);
+            
+            // Very sharp volume envelope (short blip)
+            gainNode.gain.setValueAtTime(0.015, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.01);
+            
+            osc.connect(gainNode);
+            // Route through the master input so it catches the reverb
+            gainNode.connect(masterInput);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.01);
+        }
+
+        // Procedural synthesis of a low-frequency rumble/explosion
+        function playRumble() {
+            if (!audioCtx || audioCtx.state === 'suspended') return;
+            
+            const bufferSize = audioCtx.sampleRate * 4; // 4 seconds of noise
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            // Generate white noise
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            // Filter the white noise into a low, terrifying rumble
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(80, audioCtx.currentTime); 
+            filter.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 1.5);
+
+            const gain = audioCtx.createGain();
+            // Swell the volume rapidly, then fade out
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3.5);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            // Route through the master input so it catches the reverb
+            gain.connect(masterInput);
+            
+            noise.start();
+        }
+
+        // Ambient geiger counter that gets faster as the background gets redder
+        function backgroundGeiger() {
+            if (!isPlaying) return;
+            
+            // Map progress to frequency of clicks (faster at the end)
+            const maxDelay = 800 - (currentProgress * 750); // From 800ms down to 50ms gaps
+            const delay = Math.random() * maxDelay;
+            
+            setTimeout(() => {
+                if (isPlaying) {
+                    playClick(400); // Lower pitch for background radiation clicks
+                    backgroundGeiger();
+                }
+            }, delay);
+        }
+
+        // Linear interpolation helper for colors
+        function lerp(start, end, t) {
+            return start + (end - start) * t;
+        }
+
+        // Gradually turn the background from black to intense orange/red
+        function updateBackgroundColor() {
+            // Target Color: rgb(255, 69, 0)
+            const r = Math.round(lerp(0, 255, currentProgress));
+            const g = Math.round(lerp(0, 69, currentProgress));
+            const b = 0;
+            document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+            // Dynamically increase reverb (wet gain) as progress increases
+            if (wetGain && dryGain) {
+                // Slowly ramps up the cavernous echo during the typing phase
+                wetGain.gain.setTargetAtTime(currentProgress * 0.8, audioCtx.currentTime, 0.1);
+                dryGain.gain.setTargetAtTime(1 - (currentProgress * 0.3), audioCtx.currentTime, 0.1);
+            }
+        }
+
+        async function typeText() {
+            isPlaying = true;
+            backgroundGeiger();
+            
+            const startTime = performance.now(); // Start the timer
+            
+            for (let i = 0; i < textToType.length; i++) {
+                const char = textToType[i];
+                textContainer.innerHTML += char;
+                
+                // Update progress metric
+                currentProgress = i / textToType.length;
+                updateBackgroundColor();
+
+                // Play a typing sound (unless it's a space)
+                if (char !== ' ') {
+                    playClick(800);
+                }
+
+                // Determine typing delay (Base ~70ms)
+                let delay = 40 + Math.random() * 60;
+                
+                // Add natural pauses for punctuation
+                if (char === '.' || char === ',' || char === ';') {
+                    delay += 300 + Math.random() * 200;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+
+            const endTime = performance.now(); // Stop the timer
+            typingDuration = endTime - startTime; // Calculate exact milliseconds
+
+            // We no longer stop the audio here. 
+            // We let the frantic geiger counter continue to develop and run!
+            
+            // Wait 2 seconds in silence before the "explosion"/wipe
+            setTimeout(triggerExplosion, 2000);
+        }
+
+        function triggerExplosion() {
+            playRumble();
+            
+            // Instantly snap the background to a bright orange/red
+            document.body.style.backgroundColor = "rgb(255, 69, 0)";
+            
+            // Convert milliseconds to seconds for CSS
+            const wipeDurationSecs = (typingDuration / 1000).toFixed(2);
+            
+            // Push reverb to an extreme, overwhelming level over the duration of the wipe
+            if (wetGain && dryGain) {
+                wetGain.gain.linearRampToValueAtTime(2.5, audioCtx.currentTime + parseFloat(wipeDurationSecs));
+                dryGain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + parseFloat(wipeDurationSecs));
+            }
+
+            // Slowly wipe the text from top to bottom matching exact typing duration
+            textContainer.style.transition = `clip-path ${wipeDurationSecs}s ease-in-out, -webkit-clip-path ${wipeDurationSecs}s ease-in-out`;
+            textContainer.style.clipPath = "inset(100% 0 0 0)";
+            textContainer.style.webkitClipPath = "inset(100% 0 0 0)";
+
+            // Finally turn off the geiger counter after the exact wipe duration completes
+            setTimeout(() => {
+                isPlaying = false;
+            }, typingDuration);
+        }
+
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            startScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                // Wait a second in the dark before typing starts
+                setTimeout(typeText, 1000);
+            }, 500);
+        });
+
+    </script>
+</body>
+</html>

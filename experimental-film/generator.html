@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprite Sheet Generator</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; padding: 50px; }
+        button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #00ffcc; border: none; font-weight: bold;}
+        canvas { display: none; /* Hide the massive canvas to prevent browser lag */ }
+    </style>
+</head>
+<body>
+    <h1>16mm Sprite Sheet Template Generator</h1>
+    <p>Generating a 8640x6480 pixel grid (54x54 frames). This might take a second!</p>
+    <button id="downloadBtn">Download Template PNG</button>
+    <canvas id="gridCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // The Blueprint Math
+        const frameW = 160;
+        const frameH = 120;
+        const cols = 54;
+        const totalFrames = 2880; // 2 mins at 24fps
+        
+        canvas.width = cols * frameW;
+        canvas.height = Math.ceil(totalFrames / cols) * frameH;
+
+        // Fill background black
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the grid
+        ctx.strokeStyle = '#333'; // Dark grey grid lines
+        ctx.fillStyle = '#00ffcc'; // Neon text
+        ctx.font = '20px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i < totalFrames; i++) {
+            let col = i % cols;
+            let row = Math.floor(i / cols);
+            let x = col * frameW;
+            let y = row * frameH;
+
+            // Draw Box
+            ctx.strokeRect(x, y, frameW, frameH);
+            // Draw Number
+            ctx.fillText(i + 1, x + (frameW / 2), y + (frameH / 2));
+        }
+
+        // Handle Download
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = '16mm_2min_template.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>

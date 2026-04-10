@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>16mm Sprite Player</title>
+    <style>
+        body {
+            margin: 0; display: flex; justify-content: center; align-items: center;
+            height: 100vh; background-color: #111;
+        }
+
+        .projector {
+            width: 160px;  /* Exact width of one frame */
+            height: 120px; /* Exact height of one frame */
+            background-image: url('16mm_2min_template.png'); 
+            background-repeat: no-repeat;
+            
+            /* Scale it up so it looks like a movie screen */
+            transform: scale(4); 
+            image-rendering: pixelated; 
+            box-shadow: 0 0 50px rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="projector" id="screen"></div>
+
+    <script>
+        const screen = document.getElementById('screen');
+        
+        // The Blueprint Math
+        const frameW = 160;
+        const frameH = 120;
+        const cols = 54;
+        const totalFrames = 2880;
+        const fps = 24;
+        
+        let currentFrame = 0;
+
+        function playFilm() {
+            // Calculate which column and row we are currently on
+            let col = currentFrame % cols;
+            let row = Math.floor(currentFrame / cols);
+            
+            // Calculate the exact pixel offset
+            let posX = -(col * frameW);
+            let posY = -(row * frameH);
+            
+            // Apply it to the CSS
+            screen.style.backgroundPosition = `${posX}px ${posY}px`;
+            
+            // Move to next frame
+            currentFrame++;
+            
+            // Loop back to start if we reach 2 minutes
+            if (currentFrame >= totalFrames) {
+                currentFrame = 0;
+            }
+        }
+
+        // Start the projector! (1000ms / 24fps = 41.66ms per frame)
+        setInterval(playFilm, 1000 / fps);
+    </script>
+</body>
+</html>
