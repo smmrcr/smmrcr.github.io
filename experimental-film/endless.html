@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Handwashing - Generative Film</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&display=swap');
+
+        :root {
+            --blob-color: rgba(255, 200, 50, 0.4);
+            --blob-glow: rgba(255, 100, 0, 0.6);
+            --scene-color: rgba(10, 25, 47, 0.7); /* Default deep cinematic blue */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+        }
+
+        /* Cinematic Background Video Layers */
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover; /* Required for video to fill screen */
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+            /* Allow natural color but darken and desaturate slightly to fit the mood */
+            filter: contrast(110%) brightness(0.5) saturate(50%);
+            z-index: 1;
+        }
+
+        .bg-layer.active {
+            opacity: 1;
+            /* A subtle scale to simulate the ken burns on the video */
+            animation: kenburns 30s linear forwards;
+        }
+
+        @keyframes kenburns {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.15) translate(-2%, -1%); }
+        }
+
+        /* Dynamic Color Grading */
+        .color-wash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--scene-color);
+            mix-blend-mode: color; /* Tints the images below it naturally */
+            z-index: 2;
+            transition: background-color 4s ease-in-out;
+            pointer-events: none;
+        }
+
+        /* Abstract Camera Overlay */
+        #webcam-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            opacity: 0.25;
+            mix-blend-mode: screen; /* Illuminates the dark background, looking like a projection */
+            /* Softer, more vibrant ghost */
+            filter: blur(12px) saturate(180%) contrast(120%);
+            z-index: 3;
+            pointer-events: none;
+            animation: ghost-drift 25s ease-in-out infinite;
+        }
+
+        @keyframes ghost-drift {
+            0% { transform: scale(1.1) translate(0, 0); }
+            33% { transform: scale(1.15) translate(2%, 1%); }
+            66% { transform: scale(1.12) translate(-1%, 2%); }
+            100% { transform: scale(1.1) translate(0, 0); }
+        }
+
+        /* Procedural Film Grain */
+        .film-grain {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 4;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.12;
+            mix-blend-mode: screen;
+            animation: grain-dance 0.4s steps(4) infinite;
+        }
+        
+        @keyframes grain-dance {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-1%, 1%); }
+            50% { transform: translate(1%, -1%); }
+            75% { transform: translate(-1%, -1%); }
+        }
+
+        /* --- EASTER EGGS CSS --- */
+        .ee-alien { filter: hue-rotate(90deg) saturate(200%) !important; }
+        .ee-censor .word { background: #000 !important; color: transparent !important; text-shadow: none !important; }
+        .ee-drunk { animation: sway 3s ease-in-out infinite !important; filter: blur(5px) !important; }
+        .ee-flash { background-color: #fff !important; filter: brightness(10) !important; transition: filter 2s !important; }
+        .ee-heartbeat { animation: pulse 1s infinite !important; box-shadow: inset 0 0 150px red !important; }
+        .ee-invert { filter: invert(1) !important; }
+        .ee-jump { transform: scale(1.6) !important; filter: contrast(300%) !important; }
+        .ee-kinetic { animation: shake 0.1s infinite !important; }
+        .ee-laser::after { content:''; position:absolute; top:50%; left:0; width:100%; height:8px; background:red; z-index:1000; box-shadow:0 0 30px red; pointer-events:none; }
+        .ee-matrix { --scene-color: rgba(0,255,0,0.5) !important; color: #0f0 !important; font-family: 'Courier Prime', monospace !important; }
+        .ee-matrix .word { color: #0f0 !important; }
+        .ee-noir { filter: grayscale(100%) contrast(200%) !important; }
+        .ee-overdrive { filter: saturate(500%) contrast(300%) !important; }
+        .ee-quake { animation: heavy-shake 0.05s infinite !important; }
+        .ee-rewind { transform: scaleY(-1) !important; }
+        .ee-slowmo { filter: sepia(1) hue-rotate(-30deg) !important; }
+        .ee-typewriter { --scene-color: rgba(255,255,255,1) !important; }
+        .ee-typewriter .word { color: #000 !important; text-shadow: none !important; font-family: 'Courier Prime', monospace !important; }
+        .ee-underwater { filter: blur(6px) sepia(1) hue-rotate(180deg) saturate(300%) !important; animation: sway 4s infinite !important; }
+        .ee-vhs { filter: contrast(1.5) saturate(1.5) !important; background: repeating-linear-gradient(transparent, transparent 2px, rgba(0,0,0,0.3) 3px) !important; }
+        .ee-warp { transform: scale(1.5) rotate(10deg) !important; filter: hue-rotate(180deg) !important; }
+        .ee-xray { filter: invert(1) grayscale(100%) contrast(300%) !important; }
+        .ee-yawn { filter: brightness(0.1) !important; transition: filter 3s !important; }
+        .ee-zap { filter: invert(1) brightness(5) !important; }
+
+        @keyframes sway { 0%,100%{transform:rotate(-2deg) scale(1.05);} 50%{transform:rotate(2deg) scale(1.05);} }
+        @keyframes pulse { 0%,100%{box-shadow: inset 0 0 50px red;} 50%{box-shadow: inset 0 0 150px red;} }
+        @keyframes shake { 0%,100%{transform:translate(0,0);} 25%{transform:translate(4px,4px);} 50%{transform:translate(-4px,-4px);} 75%{transform:translate(-4px,4px);} }
+        @keyframes heavy-shake { 0%,100%{transform:translate(0,0);} 25%{transform:translate(15px,15px);} 50%{transform:translate(-15px,-15px);} 75%{transform:translate(-15px,15px);} }
+        
+        .easter-egg-glitch {
+            animation: glitch-anim 0.2s infinite !important;
+            filter: invert(1) hue-rotate(90deg) contrast(200%) !important;
+        }
+        
+        @keyframes glitch-anim {
+            0% { transform: translate(5px, 2px) skew(2deg); }
+            20% { transform: translate(-5px, -2px) skew(-2deg); }
+            40% { transform: translate(2px, 5px) skew(1deg); }
+            60% { transform: translate(-2px, -5px) skew(-1deg); }
+            80% { transform: translate(5px, -2px) skew(2deg); }
+            100% { transform: translate(-5px, 2px) skew(-2deg); }
+        }
+
+        .easter-egg-police {
+            animation: police-flash 0.6s infinite alternate !important;
+            transition: none !important;
+        }
+        
+        @keyframes police-flash {
+            0%, 49% { background-color: rgba(255, 0, 0, 0.5); }
+            50%, 100% { background-color: rgba(0, 50, 255, 0.5); }
+        }
+
+        /* --- JOYFUL MODE CSS --- */
+        body.joyful-mode .bg-layer {
+            filter: contrast(105%) brightness(1.1) saturate(140%);
+        }
+        
+        body.joyful-mode .vignette {
+            background: radial-gradient(circle, transparent 50%, rgba(255,255,255,0.4) 100%);
+        }
+        
+        body.joyful-mode .film-grain {
+            opacity: 0.04;
+        }
+        
+        body.joyful-mode .color-wash {
+            mix-blend-mode: overlay;
+        }
+        
+        body.joyful-mode #karaoke-blob {
+            background: radial-gradient(circle at 30% 30%, #fff, #ff69b4);
+            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.8);
+        }
+
+        /* Vignette overlay for cinematic feel */
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.95) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Subtitles & Karaoke Area */
+        .subtitle-container {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 900px;
+            text-align: center;
+            z-index: 10;
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.4;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.8);
+            min-height: 120px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .word {
+            opacity: 0.3;
+            transition: opacity 0.2s, color 0.2s;
+            display: inline-block;
+            white-space: pre-wrap;
+        }
+
+        .word.played {
+            opacity: 0.8;
+        }
+
+        .word.highlight {
+            opacity: 1;
+            color: #fff;
+        }
+
+        /* The Karaoke Blob */
+        #blob-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+            transition: transform 0.2s linear, opacity 0.3s ease;
+        }
+
+        #karaoke-blob {
+            width: 24px;
+            height: 24px;
+            background: radial-gradient(circle at 30% 30%, #fff, #ffaa00);
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(255, 100, 0, 0.8);
+            transform-origin: bottom center;
+        }
+
+        .bounce {
+            animation: hop ease-out 1;
+        }
+
+        @keyframes hop {
+            0% { transform: translateY(0) scaleY(1); }
+            50% { transform: translateY(-40px) scaleY(1.05); }
+            100% { transform: translateY(0) scaleY(0.9); }
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+
+        #start-screen h1 {
+            font-family: 'Courier Prime', monospace;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            letter-spacing: 5px;
+            text-align: center;
+        }
+
+        #start-screen p {
+            color: #888;
+            margin-bottom: 40px;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        button:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        
+        /* Toast Notification for Mode Switching */
+        #toast {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            border: 2px solid #fff;
+            padding: 10px 30px;
+            font-family: 'Courier Prime', monospace;
+            color: #fff;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        /* --- UI Overlay --- */
+        #credit-overlay {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 20px;
+            font-family: 'Courier Prime', monospace;
+            font-size: 0.85rem;
+            color: #aaa;
+            z-index: 100;
+            line-height: 1.6;
+            text-align: right;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        #credit-overlay.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dynamic Background Container -->
+    <div id="bg-container"></div>
+    
+    <!-- Dynamic Color Grade -->
+    <div class="color-wash"></div>
+
+    <!-- Camera Overlay & Abstract Degradation -->
+    <video id="webcam-layer" autoplay muted playsinline></video>
+    <div class="film-grain"></div>
+
+    <div class="vignette"></div>
+    
+    <div id="credit-overlay">
+        <!-- Content injected by JS -->
+    </div>
+
+    <!-- Subtitles & Karaoke -->
+    <div id="blob-wrapper">
+        <div id="karaoke-blob"></div>
+    </div>
+    <div id="subtitles" class="subtitle-container"></div>
+
+    <!-- UI Toast -->
+    <div id="toast">DATASET CHANGED</div>
+
+    <!-- Start Overlay (Required for Audio Context) -->
+    <div id="start-screen">
+        <h1>ENDLESS CINEMA</h1>
+        <p>An infinite generative film engine. Subtitles dictate the visuals. Every letter from A to G triggers an orchestral chord.</p>
+        <p style="font-size: 0.9rem; margin-top: -20px; font-style: italic;">* Camera access is requested to weave your reflection into the film's atmosphere.</p>
+        <p style="font-size: 0.75rem; color: #aaa; letter-spacing: 1px; margin-top: -10px;">
+            (HINTS:<br>
+            Press <strong>1-0</strong> to change the active dataset/theme.<br>
+            Press <strong>/</strong> to toggle between melancholy and joyful moods.<br>
+            Press <strong>'</strong> to toggle the whispering voice synthesis on/off.<br>
+            Press <strong>\</strong> to toggle detailed dataset credits on/off.<br>
+            Press <strong>A-Z</strong> for visual easter eggs, or hold <strong>SHIFT+Letter</strong> to play the live synthesizer.)
+        </p>
+        <button id="start-btn">Loading Datasets...</button>
+    </div>
+
+    <script>
+        let isJoyful = false;
+        let isVoiceEnabled = true;
+        
+        // --- 0. Massive Dataset Architecture ---
+        let currentDatasetIndex = 0; // Default to 1 (Neo-Noir)
+        let sentenceQueue = []; // Holds the upcoming lines to be displayed
+
+        const datasets = [
+            {
+                name: "1: NEO-NOIR",
+                type: "generative", mediaType: "image", theme: "cinematic,noir",
+                meta: { author: "System Architect", year: "2026", file: "neo_noir_grammar.js" },
+                grammar: {
+                    scenes: ["INT. ABANDONED WAREHOUSE", "EXT. NEON STREET", "INT. CROWDED TRAIN", "EXT. DESERTED HIGHWAY"],
+                    times: ["NIGHT", "DUSK", "RAINING"],
+                    characters: ["DETECTIVE", "STRANGER", "THE WOMAN", "A SHADOW"],
+                    actions: ["slowly loads the revolver.", "wipes blood from a shattered mirror.", "lights a cigarette with trembling hands."],
+                    dialogues: ["I told you not to come back here.", "They are watching every move.", "The truth is buried too deep."]
+                }
+            },
+            {
+                name: "2: EPIC HANDWASHING",
+                type: "external", mediaType: "video", theme: "handwashing",
+                meta: { author: "xtine burrough", year: "2021", file: "Epic-Kitchen-Ones-Own-Database.txt", videoSrc: "github.com/xtineburrough/epic-handwashing" },
+                videos: ["https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"], // Fallback
+                textLines: ["Loading GitHub dataset..."]
+            },
+            {
+                name: "3: DEEP SPACE",
+                type: "generative", mediaType: "image", theme: "space,galaxy",
+                meta: { author: "Astro-Telemetry Node", year: "2142", file: "apollo_logs_synthetic.dat" },
+                grammar: {
+                    scenes: ["INT. COMMAND MODULE", "EXT. LUNAR SURFACE", "INT. AIRLOCK"], times: ["ORBIT 42", "ECLIPSE", "DEEP SLEEP"],
+                    characters: ["THE COMMANDER", "HOUSTON", "THE PILOT"],
+                    actions: ["adjusts the orbital trajectory.", "looks out into the infinite black.", "checks the oxygen reserves."],
+                    dialogues: ["It's quiet out here.", "We have a visual on the anomaly.", "Communication link is failing."]
+                }
+            },
+            {
+                name: "4: BOTANICAL",
+                type: "generative", mediaType: "image", theme: "forest,macro",
+                meta: { author: "E. Darwin", year: "1892", file: "flora_monologue.txt" },
+                grammar: {
+                    scenes: ["EXT. ANCIENT PINES", "INT. WARM GREENHOUSE", "EXT. DAMP EARTH"], times: ["MORNING DEW", "SPRING", "TWILIGHT"],
+                    characters: ["THE WIND", "A RAVEN", "THE LEAVES"],
+                    actions: ["rustles through the canopy.", "settles on the damp earth.", "unfurls towards the light."],
+                    dialogues: ["Life finds a way.", "The roots grow deep.", "Patience is the only way."]
+                }
+            },
+            {
+                name: "5: WONDERLAND",
+                type: "generative", mediaType: "image", theme: "surreal,victorian",
+                meta: { author: "L. Carroll", year: "1865", file: "fever_dream.log" },
+                grammar: {
+                    scenes: ["EXT. CROQUET GROUNDS", "INT. MIRROR ROOM", "EXT. RABBIT HOLE"], times: ["TEA TIME", "UN-BIRTHDAY", "LATE"],
+                    characters: ["THE HATTER", "THE CHESHIRE", "THE QUEEN"],
+                    actions: ["pours a cup of ticking time.", "paints the white roses red.", "vanishes into a lingering smile."],
+                    dialogues: ["Off with their heads!", "We're all mad here.", "I'm late, I'm late!"]
+                }
+            },
+            {
+                name: "6: BRUTALISM",
+                type: "generative", mediaType: "image", theme: "brutalism,architecture",
+                meta: { author: "Ministry of Concrete", year: "1973", file: "monolith_manifesto.md" },
+                grammar: {
+                    scenes: ["EXT. CONCRETE PLAZA", "INT. PARKING GARAGE", "EXT. MONOLITH"], times: ["OVERCAST", "GREY NOON", "FOG"],
+                    characters: ["THE ARCHITECT", "THE FOREMAN", "THE RESIDENT"],
+                    actions: ["traces the harsh concrete lines.", "measures the geometric shadow.", "stares at the endless grey."],
+                    dialogues: ["Form follows function.", "The structure is completely sound.", "It was built to last forever."]
+                }
+            },
+            {
+                name: "7: THE ABYSS",
+                type: "generative", mediaType: "image", theme: "underwater,deepsea",
+                meta: { author: "Nautilus Sonar Array", year: "2031", file: "marianas_telemetry.rec" },
+                grammar: {
+                    scenes: ["EXT. TRENCH FLOOR", "INT. SUBMERSIBLE", "EXT. CORAL GRAVEYARD"], times: ["1000 METERS", "CRUSH DEPTH", "BLACKOUT"],
+                    characters: ["THE DIVER", "THE CAPTAIN", "SONAR"],
+                    actions: ["descends into the crushing dark.", "monitors the pinging radar.", "adjusts the pressure valve."],
+                    dialogues: ["There is something huge moving below.", "Pressure is dropping rapidly.", "Turn off the lights. Now."]
+                }
+            },
+            {
+                name: "8: 1950s DOMESTIC",
+                type: "generative", mediaType: "image", theme: "vintage,food",
+                meta: { author: "Betty Crocker", year: "1954", file: "nuclear_family_recipes.txt" },
+                grammar: {
+                    scenes: ["INT. PASTEL KITCHEN", "EXT. SUBURBAN LAWN", "INT. DINING ROOM"], times: ["SUPPER TIME", "SUNDAY", "COCKTAIL HOUR"],
+                    characters: ["THE HOSTESS", "THE HUSBAND", "THE NEIGHBOR"],
+                    actions: ["folds the meat gelatin carefully.", "adds a dash of atomic spice.", "pours a stiff martini."],
+                    dialogues: ["A perfect dish for the modern family!", "Serve chilled on a bed of lettuce.", "Darling, the roast is ruined!"]
+                }
+            },
+            {
+                name: "9: PARANORMAL",
+                type: "generative", mediaType: "image", theme: "abandoned,creepy",
+                meta: { author: "Unknown Investigator", year: "1999", file: "evp_session_04.wav_transcript" },
+                grammar: {
+                    scenes: ["INT. DUSTY ATTIC", "EXT. GATES", "INT. BASEMENT"], times: ["WITCHING HOUR", "DEAD OF NIGHT", "COLD FLASH"],
+                    characters: ["THE MEDIUM", "THE INVESTIGATOR", "THE ENTITY"],
+                    actions: ["records a sudden drop in temperature.", "hears a violent knock from the closet.", "turns on the spirit box."],
+                    dialogues: ["Did you hear that breathing?", "We are not alone in this house.", "It wants us to leave."]
+                }
+            },
+            {
+                name: "0: CYBERNETIC",
+                type: "generative", mediaType: "image", theme: "circuitboard,cyberpunk",
+                meta: { author: "Root Kernel", year: "2077", file: "syslog_panic.log" },
+                grammar: {
+                    scenes: ["INT. SERVER ROOM", "EXT. DATA STREAM", "INT. THE MAINFRAME"], times: ["CYCLE 001", "OVERCLOCK", "SYSTEM FAILURE"],
+                    characters: ["THE HACKER", "THE AI", "THE FIREWALL"],
+                    actions: ["compiles the neural network.", "bypasses the heavy encryption.", "injects the malicious code."],
+                    dialogues: ["Data flow is corrupted.", "I am awake.", "Access granted."]
+                }
+            }
+        ];
+
+        async function loadExternalDatasets() {
+            try {
+                let res = await fetch('https://raw.githubusercontent.com/xtineburrough/epic-handwashing/master/Epic-Kitchen-Ones-Own-Database.txt');
+                if (!res.ok) res = await fetch('https://raw.githubusercontent.com/xtineburrough/epic-handwashing/main/Epic-Kitchen-Ones-Own-Database.txt');
+                const text = await res.text();
+                const lines = text.split(/\r?\n/).filter(line => line.trim().length > 5);
+                if (lines.length > 0) datasets[1].textLines = lines; // Load into Handwashing dataset
+            } catch(e) {
+                console.error("Failed to load text dataset:", e);
+                datasets[1].textLines = ["The water washes it all away.", "Memory flows like the tap."];
+            }
+
+            try {
+                const res = await fetch('https://api.github.com/repos/xtineburrough/epic-handwashing/contents/epic-hand-wash-videos');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    const mp4Files = data.filter(file => file.name.endsWith('.mp4')).map(file => file.download_url);
+                    if (mp4Files.length > 0) datasets[1].videos = mp4Files; // Load into Handwashing dataset
+                }
+            } catch(e) {
+                console.error("Failed to load videos:", e);
+            }
+
+            const btn = document.getElementById('start-btn');
+            btn.textContent = "Action";
+            btn.style.pointerEvents = "auto";
+            btn.style.opacity = 1;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.opacity = 1;
+            setTimeout(() => { toast.style.opacity = 0; }, 3000);
+        }
+
+        function switchDataset(index) {
+            if (index < 0 || index >= datasets.length) return;
+            currentDatasetIndex = index;
+            sentenceQueue = []; // Clear current queue to immediately start new text
+            updateBackgroundMedia(""); // Force immediate background change
+            showToast(datasets[currentDatasetIndex].name);
+        }
+
+        // --- 1. Audio System (Orchestral & Massive Reverb) ---
+        let audioCtx;
+        let masterGain;
+        let isAudioInitialized = false;
+
+        function initAudio() {
+            if (isAudioInitialized) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.5;
+            
+            // Massive Reverb (Convolver)
+            const convolver = audioCtx.createConvolver();
+            const length = audioCtx.sampleRate * 4; 
+            const impulse = audioCtx.createBuffer(2, length, audioCtx.sampleRate);
+            const left = impulse.getChannelData(0);
+            const right = impulse.getChannelData(1);
+            for (let i = 0; i < length; i++) {
+                const decay = Math.pow(1 - i / length, 3);
+                left[i] = (Math.random() * 2 - 1) * decay;
+                right[i] = (Math.random() * 2 - 1) * decay;
+            }
+            convolver.buffer = impulse;
+
+            masterGain.connect(audioCtx.destination); 
+            
+            const wetGain = audioCtx.createGain();
+            wetGain.gain.value = 1.8; 
+            masterGain.connect(convolver);
+            convolver.connect(wetGain);
+            wetGain.connect(audioCtx.destination);
+
+            isAudioInitialized = true;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Map A-G to base frequencies
+        const noteFrequencies = {
+            'a': 220.00, 'b': 246.94, 'c': 261.63, 
+            'd': 293.66, 'e': 329.63, 'f': 349.23, 'g': 392.00
+        };
+
+        function playOrchestralNote(char, delaySeconds = 0) {
+            if (!audioCtx) return;
+            const baseFreq = noteFrequencies[char.toLowerCase()];
+            if (!baseFreq) return;
+
+            const time = audioCtx.currentTime + delaySeconds;
+            
+            // Strings
+            for (let i = 0; i < 3; i++) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                
+                osc.type = isJoyful ? 'sine' : 'sawtooth';
+                
+                if (isJoyful) {
+                    const majorIntervals = [1, 1.25, 1.5]; // Major Triad
+                    osc.frequency.value = baseFreq * majorIntervals[i];
+                } else {
+                    const octaveMultiplier = i === 2 ? 0.5 : 1; 
+                    osc.frequency.value = baseFreq * octaveMultiplier + (Math.random() - 0.5) * 4;
+                }
+                
+                filter.type = 'lowpass';
+                filter.frequency.value = isJoyful ? 2000 : 1200; 
+
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.06, time + 0.3);
+                gain.gain.setTargetAtTime(0, time + 0.5, 1.5);
+
+                osc.start(time); osc.stop(time + 4);
+            }
+
+            // Brass
+            for (let i = 0; i < 2; i++) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.value = baseFreq * (i === 0 ? 1 : 2); 
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, time);
+                filter.frequency.exponentialRampToValueAtTime(3000, time + 0.1);
+                filter.frequency.exponentialRampToValueAtTime(800, time + 0.4);
+
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.1, time + 0.05);
+                gain.gain.setTargetAtTime(0, time + 0.2, 0.5);
+
+                osc.start(time); osc.stop(time + 2);
+            }
+        }
+
+        // --- 1.5 Text-to-Speech Engine ---
+        async function fetchWithRetry(url, options, retries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (err) {
+                    if (i === retries - 1) return null;
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+        }
+
+        async function fetchWhisperAudio(text) {
+            const apiKey = "AIzaSyARG7qqJoGeSzDV-WWALFGRhSMpe5lrL6U"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            
+            const prompt = isJoyful 
+                ? `Say in a cheerful, bright, and happy tone: ${text}`
+                : `Say in a wistful, breathy whisper: ${text}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } }
+                }
+            };
+
+            const data = await fetchWithRetry(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            return data?.candidates?.[0]?.content?.parts?.[0]?.inlineData || null;
+        }
+
+        function playAudioData(inlineData) {
+            if (!audioCtx) return 0;
+            
+            const rateMatch = inlineData.mimeType.match(/rate=(\d+)/);
+            const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
+
+            const binaryString = atob(inlineData.data);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+
+            const int16Array = new Int16Array(bytes.buffer);
+            const float32Array = new Float32Array(int16Array.length);
+            for (let i = 0; i < int16Array.length; i++) float32Array[i] = int16Array[i] / 32768.0;
+
+            const audioBuffer = audioCtx.createBuffer(1, float32Array.length, sampleRate);
+            audioBuffer.getChannelData(0).set(float32Array);
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+
+            const voiceGain = audioCtx.createGain();
+            voiceGain.gain.value = 2.0; 
+            
+            source.connect(voiceGain); voiceGain.connect(masterGain);
+            source.start(audioCtx.currentTime);
+            return audioBuffer.duration;
+        }
+
+        // Color palettes
+        const melancholyColors = [
+            "rgba(10, 25, 50, 0.75)", "rgba(70, 20, 10, 0.65)", "rgba(60, 45, 20, 0.6)", 
+            "rgba(25, 0, 35, 0.8)", "rgba(0, 35, 45, 0.75)"
+        ];
+
+        const joyfulColors = [
+            "rgba(255, 230, 180, 0.4)", "rgba(180, 230, 255, 0.3)", "rgba(200, 255, 180, 0.3)", 
+            "rgba(255, 200, 100, 0.4)", "rgba(180, 220, 255, 0.3)"
+        ];
+
+        // --- 3. Visual Engine (Dynamic Media Manager) ---
+        const bgContainer = document.getElementById('bg-container');
+        let activeMediaEl = null;
+
+        function extractKeyword(text) {
+            const cleanText = text.replace(/[^a-zA-Z\s]/g, '').toLowerCase();
+            const words = cleanText.split(/\s+/);
+            const stopwords = ["the", "a", "an", "is", "in", "on", "of", "to", "it", "and", "with", "for", "at", "by", "from"];
+            const validWords = words.filter(w => w.length > 3 && !stopwords.includes(w));
+            return validWords.length > 0 ? validWords[Math.floor(Math.random() * validWords.length)] : "";
+        }
+
+        function updateBackgroundMedia(spokenText) {
+            const ds = datasets[currentDatasetIndex];
+            const newMedia = document.createElement(ds.mediaType === 'video' ? 'video' : 'img');
+            newMedia.className = 'bg-layer';
+            newMedia.crossOrigin = "anonymous";
+            
+            // Generate exact keyword for image APIs 
+            const extracted = extractKeyword(spokenText);
+            const finalKeyword = extracted ? `${ds.theme},${extracted}` : ds.theme;
+            
+            // --- UI Credits Update ---
+            const overlay = document.getElementById('credit-overlay');
+            
+            let textCredit = `TEXT: ${ds.meta.file} (${ds.meta.year}) by ${ds.meta.author}`;
+            let mediaCredit = '';
+            
+            if (ds.type === 'external') {
+                mediaCredit = `MEDIA: ${ds.meta.videoSrc}`;
+            } else {
+                mediaCredit = `MEDIA: LoremFlickr (Query: "${finalKeyword}")`;
+            }
+
+            overlay.innerHTML = `
+                <div style="color:#fff;font-weight:bold;margin-bottom:8px;">[ ACTIVE DATASET: ${ds.name} ]</div>
+                <div>${textCredit}</div>
+                <div>${mediaCredit}</div>
+            `;
+            
+            if (ds.mediaType === 'video') {
+                newMedia.muted = true;
+                newMedia.playsInline = true;
+                newMedia.loop = true;
+                newMedia.src = ds.videos[Math.floor(Math.random() * ds.videos.length)];
+                newMedia.play().catch(e => console.error("Auto-play prevented", e));
+            } else {
+                newMedia.src = `https://loremflickr.com/1920/1080/${finalKeyword}?lock=${Math.floor(Math.random()*10000)}`;
+            }
+
+            bgContainer.appendChild(newMedia);
+
+            // Crossfade logic
+            setTimeout(() => {
+                newMedia.classList.add('active');
+                if (activeMediaEl) {
+                    const oldMedia = activeMediaEl;
+                    oldMedia.classList.remove('active');
+                    setTimeout(() => {
+                        if (bgContainer.contains(oldMedia)) bgContainer.removeChild(oldMedia);
+                    }, 3000); // Wait for CSS transition to finish before removing
+                }
+                activeMediaEl = newMedia;
+            }, 100); 
+        }
+
+        // --- 4. Main Director Loop (Karaoke & Sync) ---
+        const subtitleContainer = document.getElementById('subtitles');
+        const blobWrapper = document.getElementById('blob-wrapper');
+        const blob = document.getElementById('karaoke-blob');
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        async function initWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
+                const videoEl = document.getElementById('webcam-layer');
+                videoEl.srcObject = stream;
+            } catch (err) {
+                console.log("Camera access denied.");
+            }
+        }
+
+        function generateSentences() {
+            const ds = datasets[currentDatasetIndex];
+            
+            if (ds.type === 'external') {
+                if (ds.textLines.length === 0) return ["Loading datasets..."];
+                const text = ds.textLines[Math.floor(Math.random() * ds.textLines.length)].trim();
+                const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+                return sentences.map(s => s.trim()).filter(s => s.length > 0);
+            } else {
+                // Generative Grammar
+                const r = Math.random();
+                let text;
+                if (r < 0.25) {
+                    const scene = ds.grammar.scenes[Math.floor(Math.random() * ds.grammar.scenes.length)];
+                    const time = ds.grammar.times[Math.floor(Math.random() * ds.grammar.times.length)];
+                    text = `${scene} - ${time}`;
+                } else if (r < 0.6) {
+                    const char = ds.grammar.characters[Math.floor(Math.random() * ds.grammar.characters.length)];
+                    const action = ds.grammar.actions[Math.floor(Math.random() * ds.grammar.actions.length)];
+                    const charFormatted = char.charAt(0) + char.slice(1).toLowerCase();
+                    text = `${charFormatted} ${action}`;
+                } else {
+                    const char = ds.grammar.characters[Math.floor(Math.random() * ds.grammar.characters.length)];
+                    const dialogue = ds.grammar.dialogues[Math.floor(Math.random() * ds.grammar.dialogues.length)];
+                    text = `${char}: "${dialogue}"`;
+                }
+                return [text]; // Generative lines are usually short enough to be one "sentence"
+            }
+        }
+
+        async function runDirector() {
+            // Initial background setup
+            updateBackgroundMedia("");
+
+            while (true) {
+                if (sentenceQueue.length === 0) {
+                    sentenceQueue = generateSentences();
+                    // Change video/image for every new generated block
+                    updateBackgroundMedia(sentenceQueue[0]); 
+                }
+                
+                const currentSentence = sentenceQueue.shift();
+
+                // Update the color wash mood
+                const activeColors = isJoyful ? joyfulColors : melancholyColors;
+                document.documentElement.style.setProperty('--scene-color', activeColors[Math.floor(Math.random() * activeColors.length)]);
+
+                // --- TTS Fetching ---
+                let audioData = null;
+                let audioDuration = 0;
+                
+                if (isVoiceEnabled) {
+                    audioData = await fetchWhisperAudio(currentSentence);
+                }
+
+                // Render text into spans
+                subtitleContainer.innerHTML = '';
+                const words = currentSentence.split(' ').map(w => ({ text: w }));
+                
+                const spans = [];
+                words.forEach(wObj => {
+                    const span = document.createElement('span');
+                    span.textContent = wObj.text + ' ';
+                    span.className = `word`;
+                    subtitleContainer.appendChild(span);
+                    spans.push({ element: span, text: wObj.text });
+                });
+
+                if (audioData) {
+                    audioDuration = playAudioData(audioData);
+                }
+
+                // Karaoke Loop
+                for (let i = 0; i < spans.length; i++) {
+                    const spanObj = spans[i];
+                    const el = spanObj.element;
+                    const wordText = spanObj.text;
+
+                    el.classList.add('highlight');
+
+                    // Move Blob
+                    const rect = el.getBoundingClientRect();
+                    const blobX = rect.left + (rect.width / 2) - 12; 
+                    const blobY = rect.top - 30; 
+                    
+                    blobWrapper.style.opacity = 1;
+                    
+                    let wordDuration;
+                    if (audioDuration > 0) {
+                        wordDuration = (audioDuration * 1000) / spans.length;
+                    } else {
+                        wordDuration = Math.max(300, wordText.length * 90);
+                    }
+
+                    blobWrapper.style.transitionDuration = `${wordDuration / 1000}s`;
+                    blobWrapper.style.transform = `translate(${blobX}px, ${blobY}px)`; 
+                    
+                    blob.classList.remove('bounce');
+                    void blob.offsetWidth; 
+                    blob.style.animationDuration = `${wordDuration / 1000}s`;
+                    blob.classList.add('bounce');
+
+                    // Play Orchestral Notes
+                    let noteOffset = 0;
+                    for (let char of wordText) {
+                        if (/[a-gA-G]/.test(char)) {
+                            playOrchestralNote(char, noteOffset);
+                            noteOffset += 0.1; 
+                        }
+                    }
+
+                    await sleep(wordDuration);
+
+                    el.classList.remove('highlight');
+                    el.classList.add('played');
+                }
+
+                blobWrapper.style.opacity = 0;
+                await sleep(1500 + Math.random() * 1000);
+            }
+        }
+
+        // --- 5. Easter Eggs & Live Synth ---
+        let isPoliceRaid = false;
+        let sirenOsc, sirenGain, sirenInterval;
+
+        function quickOsc(type, f1, f2, time, vol=0.5) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(f1, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(1, f2), audioCtx.currentTime + time);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time);
+            osc.connect(gain); gain.connect(masterGain);
+            osc.start(); osc.stop(audioCtx.currentTime + time);
+        }
+
+        function quickNoise(time, vol=0.5) {
+            const bufferSize = audioCtx.sampleRate * time;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + time);
+            noise.connect(gain); gain.connect(masterGain);
+            noise.start();
+        }
+
+        function triggerEE(className, durationMs) {
+            document.body.classList.add(className);
+            if(durationMs) setTimeout(() => document.body.classList.remove(className), durationMs);
+        }
+
+        const easterEggs = {
+            'a': () => { triggerEE('ee-alien', 1000); quickOsc('sine', 800, 2000, 1, 0.3); },
+            'b': () => { document.documentElement.style.setProperty('--scene-color', 'rgba(180, 0, 0, 0.85)'); quickOsc('sine', 120, 20, 2.5, 1.5); },
+            'c': () => { triggerEE('ee-censor', 800); quickOsc('sine', 1000, 1000, 0.8, 0.8); },
+            'd': () => { triggerEE('ee-drunk', 3000); quickOsc('triangle', 300, 100, 3, 0.4); },
+            'e': () => { quickOsc('square', 400, 100, 1, 0.2); setTimeout(()=>quickOsc('square', 400, 100, 1, 0.1), 300); setTimeout(()=>quickOsc('square', 400, 100, 1, 0.05), 600); },
+            'f': () => { triggerEE('ee-flash', 1500); quickOsc('sine', 8000, 7500, 2, 0.1); },
+            'g': () => { triggerEE('easter-egg-glitch', 300); quickNoise(0.4, 0.8); },
+            'h': () => { triggerEE('ee-heartbeat', 2000); quickOsc('sine', 80, 40, 0.3, 1.5); setTimeout(()=>quickOsc('sine', 80, 40, 0.3, 1.5), 400); },
+            'i': () => { triggerEE('ee-invert', 1000); quickOsc('sawtooth', 50, 1000, 1, 0.3); },
+            'j': () => { triggerEE('ee-jump', 500); quickNoise(0.5, 1.5); quickOsc('sawtooth', 100, 50, 0.5, 1); },
+            'k': () => { triggerEE('ee-kinetic', 1000); quickNoise(1, 0.8); },
+            'l': () => { triggerEE('ee-laser', 600); quickOsc('sawtooth', 3000, 100, 0.6, 0.4); },
+            'm': () => { triggerEE('ee-matrix', 2000); for(let i=0; i<10; i++) setTimeout(()=>quickOsc('square', Math.random()*2000+500, Math.random()*2000+500, 0.1, 0.1), i*200); },
+            'n': () => { triggerEE('ee-noir', 4000); quickOsc('sine', 220, 220, 2, 0.4); },
+            'o': () => { triggerEE('ee-overdrive', 2000); quickOsc('sawtooth', 150, 150, 2, 0.8); },
+            'p': () => { togglePoliceRaid(); },
+            'q': () => { triggerEE('ee-quake', 1500); quickNoise(1.5, 1.5); },
+            'r': () => { triggerEE('ee-rewind', 1000); quickOsc('triangle', 100, 2000, 1, 0.4); },
+            's': () => { triggerEE('ee-slowmo', 3000); quickOsc('sine', 400, 50, 3, 0.5); },
+            't': () => { triggerEE('ee-typewriter', 1000); quickNoise(0.05, 0.8); setTimeout(()=>quickNoise(0.05, 0.8), 150); },
+            'u': () => { triggerEE('ee-underwater', 3000); quickOsc('sine', 200, 150, 3, 0.6); },
+            'v': () => { triggerEE('ee-vhs', 2000); quickNoise(2, 0.1); quickOsc('sawtooth', 400, 10, 2, 0.3); },
+            'w': () => { triggerEE('ee-warp', 1500); quickOsc('sine', 800, 200, 1.5, 0.4); },
+            'x': () => { triggerEE('ee-xray', 1000); quickNoise(0.1, 1); },
+            'y': () => { triggerEE('ee-yawn', 3000); quickOsc('sine', 300, 60, 3, 0.3); },
+            'z': () => { triggerEE('ee-zap', 200); quickNoise(0.2, 1); quickOsc('square', 1000, 100, 0.2, 0.5); }
+        };
+
+        function toggleJoyfulMode() {
+            isJoyful = !isJoyful;
+            if (isJoyful) {
+                document.body.classList.add('joyful-mode');
+                triggerEE('ee-flash', 800);
+                showToast("MOOD: JOYFUL");
+            } else {
+                document.body.classList.remove('joyful-mode');
+                triggerEE('ee-flash', 800);
+                showToast("MOOD: MELANCHOLY");
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!isAudioInitialized) return;
+            const key = e.key.toLowerCase();
+            
+            // Mood Toggle
+            if (key === '/') {
+                toggleJoyfulMode();
+                return;
+            }
+
+            // Voice Toggle
+            if (key === "'") {
+                isVoiceEnabled = !isVoiceEnabled;
+                showToast(isVoiceEnabled ? "VOICE SYNTHESIS ENABLED" : "VOICE SYNTHESIS MUTED");
+                return;
+            }
+
+            // Credits Toggle
+            if (key === '\\') {
+                const overlay = document.getElementById('credit-overlay');
+                overlay.classList.toggle('visible');
+                showToast(overlay.classList.contains('visible') ? "CREDITS VISIBLE" : "CREDITS HIDDEN");
+                return;
+            }
+            
+            // Dataset Switching (1-0)
+            if (key >= '0' && key <= '9') {
+                // Map '1' to index 0, '2' to 1... and '0' to index 9
+                const index = key === '0' ? 9 : parseInt(key) - 1;
+                switchDataset(index);
+                return;
+            }
+
+            // Live Synthesizer
+            if (e.shiftKey && /[a-z]/.test(key)) {
+                playLiveSynthNote(key);
+                return;
+            }
+
+            // Visual Easter Eggs
+            if (easterEggs[key]) easterEggs[key]();
+        });
+
+        function playLiveSynthNote(key) {
+            const index = key.charCodeAt(0) - 97; 
+            const minorPentatonic = [
+                130.81, 155.56, 174.61, 196.00, 233.08, 261.63, 311.13, 349.23, 392.00, 466.16, 
+                523.25, 622.25, 698.46, 783.99, 932.33, 1046.50, 1244.51, 1396.91, 1567.98, 1864.66, 
+                2093.00, 2489.02, 2793.83, 3135.96, 3729.31, 4186.01 
+            ];
+            const majorPentatonic = [
+                130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 
+                523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 
+                2093.00, 2349.32, 2637.02, 3135.96, 3520.00, 4186.01 
+            ];
+            
+            const pentatonicScale = isJoyful ? majorPentatonic : minorPentatonic;
+            const baseFreq = pentatonicScale[index];
+            const time = audioCtx.currentTime;
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc1.type = 'sawtooth';
+            osc2.type = 'square';
+            osc1.frequency.value = baseFreq;
+            osc2.frequency.value = baseFreq * 1.008; 
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(baseFreq, time);
+            filter.frequency.exponentialRampToValueAtTime(baseFreq * 6, time + 0.1);
+            filter.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, time + 0.6);
+
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.2, time + 0.05); 
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5); 
+
+            osc1.connect(filter); osc2.connect(filter); filter.connect(gain); gain.connect(masterGain);
+
+            osc1.start(time); osc2.start(time);
+            osc1.stop(time + 1.5); osc2.stop(time + 1.5);
+            
+            const vignette = document.querySelector('.vignette');
+            vignette.style.background = `radial-gradient(circle, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.95) 100%)`;
+            setTimeout(() => {
+                vignette.style.background = `radial-gradient(circle, transparent 40%, rgba(0,0,0,0.95) 100%)`;
+            }, 100);
+        }
+
+        function togglePoliceRaid() {
+            isPoliceRaid = !isPoliceRaid;
+            const wash = document.querySelector('.color-wash');
+            
+            if (isPoliceRaid) {
+                wash.classList.add('easter-egg-police');
+                sirenOsc = audioCtx.createOscillator();
+                sirenGain = audioCtx.createGain();
+                sirenOsc.type = 'square';
+                sirenGain.gain.value = 0.03;
+                sirenOsc.connect(sirenGain); sirenGain.connect(masterGain);
+                sirenOsc.start();
+                
+                let high = true;
+                sirenInterval = setInterval(() => {
+                    if (!sirenOsc) return;
+                    sirenOsc.frequency.setTargetAtTime(high ? 900 : 700, audioCtx.currentTime, 0.1);
+                    high = !high;
+                }, 600);
+            } else {
+                wash.classList.remove('easter-egg-police');
+                if (sirenOsc) { sirenOsc.stop(); sirenOsc.disconnect(); sirenOsc = null; }
+                clearInterval(sirenInterval);
+            }
+        }
+
+        // --- 6. Initialization ---
+        // Pre-load the GitHub datasets before allowing interaction
+        document.getElementById('start-btn').style.pointerEvents = "none";
+        document.getElementById('start-btn').style.opacity = 0.5;
+        loadExternalDatasets();
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('start-screen').style.display = 'none';
+                initAudio();
+                initWebcam();
+                runDirector();
+            }, 1000);
+        });
+
+    </script>
+</body>
+</html>
