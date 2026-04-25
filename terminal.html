@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Incident Log Recreation</title>
+    <title>Terminal</title>
     <style>
         body, html {
             margin: 0;
@@ -46,23 +46,38 @@
             align-items: center;
             z-index: 10;
             transition: opacity 0.5s ease;
-        }
-
-        #start-btn {
-            background: transparent;
-            color: #FACC15;
-            border: 2px solid #FACC15;
-            padding: 15px 40px;
-            font-size: 1.5rem;
-            font-family: monospace;
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
         }
 
-        #start-btn:hover {
-            background: #FACC15;
-            color: black;
+        .blinking-cursor {
+            color: #FACC15;
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            font-family: monospace;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Nav styling overrides for terminal */
+        #nav-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 20;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #nav-placeholder a, #nav-placeholder gluck, #nav-placeholder button {
+            color: #FACC15 !important;
+            text-decoration: none;
+            font-family: monospace;
+        }
+        #nav-placeholder .mini-hand {
+            background-color: #FACC15 !important;
         }
 
         /* Screen shake animation for the final explosion */
@@ -87,8 +102,10 @@
 </head>
 <body>
 
+    <div id="nav-placeholder"></div>
+
     <div id="start-screen">
-        <button id="start-btn">Begin Log</button>
+        <div class="blinking-cursor">👉</div>
     </div>
 
     <div id="text-container"></div>
@@ -98,7 +115,6 @@
 
         const textContainer = document.getElementById('text-container');
         const startScreen = document.getElementById('start-screen');
-        const startBtn = document.getElementById('start-btn');
         
         let audioCtx;
         let isPlaying = false;
@@ -308,7 +324,8 @@
             }, typingDuration);
         }
 
-        startBtn.addEventListener('click', () => {
+        function startSequence() {
+            if (audioCtx) return; // Prevent multiple triggers
             initAudio();
             startScreen.style.opacity = '0';
             
@@ -317,7 +334,11 @@
                 // Wait a second in the dark before typing starts
                 setTimeout(typeText, 1000);
             }, 500);
-        });
+        }
+
+        // Listen for any click or keypress to start the terminal
+        document.body.addEventListener('click', startSequence);
+        document.body.addEventListener('keydown', startSequence);
 
     </script>
 </body>

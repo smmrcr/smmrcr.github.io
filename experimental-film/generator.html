@@ -68,15 +68,15 @@
     </style>
 </head>
 <body>
-    <h1>16mm Sprite Sheet Generator (57x57)</h1>
-    <p>Configure your style, preview the top-left 3x3 frames, and download the full 3249-frame image.</p>
+    <h1>Experimental Film Generator</h1>
+    <p>Configure a template and download the full 3249-frame image. The film will play at 24fps giving a length of around 2m21s.</p>
     
     <div class="controls">
         <label>
             Style: 
             <select id="bgStyle">
                 <option value="random">Random Colors</option>
-                <option value="white">Uniform White</option>
+                <option value="white">White</option>
                 <option value="transparent">Transparent</option>
             </select>
         </label>
@@ -88,22 +88,22 @@
         </label>
     </div>
 
-    <button id="downloadBtn">Generate & Download Grid (sprite.png)</button>
-    <div class="status" id="statusMsg">Locked Settings: 160x120px frames | 57 Columns x 57 Rows</div>
+    <button id="downloadBtn">Create a Grid to edit</button>
+    <div class="status" id="statusMsg">Each frame is 160x120px | 57 Columns x 57 Rows</div>
 
     <div class="secrets">
-        <h3>Player Secret Hotkeys</h3>
+        <h3>Controls</h3>
         <ul>
             <li><strong>R</strong> : Repeat/Reset animation to frame 1</li>
-            <li><strong>C</strong> : Choose and load a local sprite sheet file</li>
-            <li><strong>S</strong> : Toggle Optical Sound generation</li>
-            <li><strong>F</strong> : Toggle Full Screen mode</li>
+            <li><strong>C</strong> : Choose and load your film</li>
+            <li><strong>S</strong> : Toggle Optical Sound</li>
+            <li><strong>F</strong> : Toggle Full Screen</li>
             <li><strong>D</strong> : Record and Download as Movie (.webm)</li>
             <li><strong>G</strong> : Open this Generator page</li>
         </ul>
     </div>
 
-    <h3>Preview (3x3 grid)</h3>
+    <h3>Preview (3x2 grid)</h3>
     <canvas id="previewCanvas"></canvas>
 
     <script>
@@ -124,7 +124,7 @@
 
         // Set preview canvas to exactly 3x3 frames
         previewCanvas.width = frameW * 3;
-        previewCanvas.height = frameH * 3;
+        previewCanvas.height = frameH * 2;
 
         // Draw function (used for both preview and final generation)
         function drawGrid(ctx, drawCols, drawRows, isPreview = false) {

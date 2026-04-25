@@ -64,6 +64,7 @@ document.getElementById('nav-placeholder').innerHTML = `
       <li class="logo-item"><gluck>Sam Mercer</gluck></li>
       <li class="link-item"><a class="works" href="index.html">Works</a></li>
       <li class="link-item"><a class="eorh" href="eorh/index.html">The end of revision history</a></li>
+      <li class="link-item"><a class="terminal" href="terminal.html">Terminal</a></li>
       <li class="link-item"><a class="disco" href="disco.html">Disco</a></li>
       <li class="link-item"><a href="contact.html">Info</a></li>
       

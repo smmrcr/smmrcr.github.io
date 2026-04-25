@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bring Your Own Website</title>
+    <style>
+        /* Base Desktop Styling */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Ubuntu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* A classic Ubuntu-style purple/orange gradient background */
+            background: linear-gradient(135deg, #cb77ff 0%, #1e1ef2 100%);
+            user-select: none;
+        }
+
+        /* Taskbar Styling */
+        .taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            box-sizing: border-box;
+            z-index: 1000;
+            color: white;
+            a:visited {color: rgb(255, 255, 255);}
+        }
+
+        .taskbar .menu-btn {
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 4px;
+
+        }
+
+        .taskbar .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .taskbar .clock {
+            font-size: 14px;
+        }
+
+
+        /* Desktop Area */
+        #desktop-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 40px); /* taskbar */
+            position: relative;
+        }
+
+        /* Icon Styling */
+        .desktop-icon {
+            position: absolute;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px 4px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .desktop-icon:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .desktop-icon .icon-img {
+            font-size: 40px; /* Using emojis as lightweight icons */
+            margin-bottom: 5px;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
+        }
+
+        .desktop-icon .icon-text {
+            font-size: 12px;
+            text-align: center;
+            text-shadow: 1px 1px 2px black;
+            word-wrap: break-word;
+            width: 100%;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ======================================================= -->
+    <!-- EDIT YOUR ICONS HERE                                    -->
+    <!-- To add an icon, copy one of the <a> lines below.        -->
+    <!-- To remove an icon, delete the line.                     -->
+    <!-- Change the href="..." to your desired URL.              -->
+    <!-- Change the text inside <span class="icon-text">.        -->
+    <!-- ======================================================= -->
+    
+    <div id="desktop-area">
+        <a href="https://schoolofcommons.org" target="_blank" class="desktop-icon"><div class="icon-img">🌐</div><span class="icon-text">Chantelle Lue</span></a>
+        <a href="https://london.permacomputing.net" target="_blank" class="desktop-icon"><div class="icon-img">♻️</div><span class="icon-text">Ana / London permacomputing</span></a>
+        <a href="https://giuliacr.github.io/programmigrating-language/index.html" target="_blank" class="desktop-icon"><div class="icon-img">📚</div><span class="icon-text">Giulia Carla Rossi</span></a>
+        <a href="https://zinemaker.lovable.app" target="_blank" class="desktop-icon"><div class="icon-img">🗺️</div><span class="icon-text">Tristan Spill</span></a>
+        <a href="https://www.stanthersink.com" target="_blank" class="desktop-icon"><div class="icon-img">⚙️</div><span class="icon-text">tajinder dhami</span></a>
+        <a href="https://hunilune.github.io/yisgreaterthanx/" target="_blank" class="desktop-icon"><div class="icon-img">📈</div><span class="icon-text">Celune Acheampong</span></a>
+        <a href="https://alixwiesser.com" target="_blank" class="desktop-icon"><div class="icon-img">🏠</div><span class="icon-text">Alix Wiesser</span></a>
+        <a href="https://alixwiesser.com/cottage" target="_blank" class="desktop-icon"><div class="icon-img">🏡</div><span class="icon-text">Alix Wiesser's Cottage</span></a>
+        <a href="https://sentyouasong.com" target="_blank" class="desktop-icon"><div class="icon-img">🎤</div><span class="icon-text">Jane Ling</span></a>
+        <a href="https://beneathourfootsteps.compiler.zone/" target="_blank" class="desktop-icon"><div class="icon-img">🐾</div><span class="icon-text">Compiler</span></a>
+        <a href="https://iso-bel.computer" target="_blank" class="desktop-icon"><div class="icon-img">🫯</div><span class="icon-text">izzy</span></a>
+        <a href="https://plasticdino.net" target="_blank" class="desktop-icon"><div class="icon-img">🦖</div><span class="icon-text">Kitty Ess</span></a>
+        <a href="https://jonathangray.org/studio" target="_blank" class="desktop-icon"><div class="icon-img">🛋️</div><span class="icon-text">Jonathan W. Y. Gray's Studio</span></a>
+        <a href="https://cute.tips/disco.html" target="_blank" class="desktop-icon"><div class="icon-img">🪩</div><span class="icon-text">Disco</span></a>
+        <a href="https://jonathangray.org/datanotfound" target="_blank" class="desktop-icon"><div class="icon-img">🚫</div><span class="icon-text">Data Not Found</span></a>
+        <a href="https://jonathangray.org/forestpark" target="_blank" class="desktop-icon"><div class="icon-img">🏕️</div><span class="icon-text">everything in the forest park</span></a>
+        <a href="https://filterrr.io/" target="_blank" class="desktop-icon"><div class="icon-img">🦀</div><span class="icon-text">Tom Glendinning</span></a>
+        <a href="#" target="_blank" class="desktop-icon"><div class="icon-img">📸</div><span class="icon-text">Eli</span></a>
+        <a href="https://lwlsn.github.io/digital-shelves/" target="_blank" class="desktop-icon"><div class="icon-img">👂</div><span class="icon-text">Lizzie Wilson</span></a>
+        <a href="https://aabdou-portfolio.vercel.app/" target="_blank" class="desktop-icon"><div class="icon-img">⭐</div><span class="icon-text">Abdelkawy Abdou</span></a>
+        <a href="https://www.aleesteele.com/" target="_blank" class="desktop-icon"><div class="icon-img">🎁</div><span class="icon-text">Anne lee Steele</span></a>
+        <a href="https://virtualgardens.xyz" target="_blank" class="desktop-icon"><div class="icon-img">🪴</div><span class="icon-text">Kendal Beynon</span></a>
+        <a href="https://internetphonebook.net" target="_blank" class="desktop-icon"><div class="icon-img">📒</div><span class="icon-text">Internet Phone Book</span></a>
+        <a href="https://mmm.page/aleesteele/internet-phone-book" target="_blank" class="desktop-icon"><div class="icon-img">🟡</div><span class="icon-text">Anne lee Steele</span></a>
+        <a href="https://thehtml.review/archive" target="_blank" class="desktop-icon"><div class="icon-img">🗞️</div><span class="icon-text">HTML Review</span></a>
+    </div>
+
+    <!-- Taskbar -->
+    <div class="taskbar">
+        <div class="menu-btn"><a href="https://thephotographersgallery.org.uk/whats-on/connection-established-bring-your-own-website">Connection Established: Bring Your Own Website</a></div>
+        <div class="clock" id="clock">00:00</div>
+    </div>
+
+    <script>
+        // --- Random Icon Placement Logic ---
+        document.addEventListener("DOMContentLoaded", () => {
+            const icons = document.querySelectorAll('.desktop-icon');
+            const desktop = document.getElementById('desktop-area');
+            
+            // Icon dimensions and safe padding to keep them on screen
+            const iconWidth = 90; 
+            const iconHeight = 100; 
+            
+            // Function to randomize positions
+            function randomizeIcons() {
+                const maxX = desktop.clientWidth - iconWidth;
+                const maxY = desktop.clientHeight - iconHeight;
+                
+                icons.forEach(icon => {
+                    // Generate random positions ensuring they stay within bounds
+                    const randomX = Math.max(0, Math.floor(Math.random() * maxX));
+                    const randomY = Math.max(0, Math.floor(Math.random() * maxY));
+                    
+                    // Apply positions
+                    icon.style.left = `${randomX}px`;
+                    icon.style.top = `${randomY}px`;
+                });
+            }
+
+            // Run on load
+            randomizeIcons();
+
+            // Re-randomize or adjust on window resize if desired
+            window.addEventListener('resize', randomizeIcons);
+        });
+
+        // --- Live Clock Logic ---
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            
+            document.getElementById('clock').innerText = `${hours}:${minutes} ${ampm}`;
+        }
+        
+        // Run clock immediately, then update every second
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
