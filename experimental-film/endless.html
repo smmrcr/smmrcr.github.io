@@ -641,9 +641,7 @@
         async function fetchWhisperAudio(text) {
             if (ttsCooldown) return null; 
 
-            // Set to empty string so this live preview window auto-injects the free key.
-            // (When hosting yourself, put your real API key here!)
-            const apiKey = ""; 
+            const apiKey = "AIzaSyARG7qqJoGeSzDV-WWALFGRhSMpe5lrL6U"; 
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
             const prompt = isJoyful ? `Say in a cheerful, bright, and happy tone: ${text}` : `Say in a wistful, breathy whisper: ${text}`;
